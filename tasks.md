@@ -4,7 +4,7 @@
 
 \- index.html (frontend)
 
-\- node.js (api)
+\- python (api)
 
 \- automatictly run the scripts (wifi, backend.py, server.py)
 
@@ -18,7 +18,7 @@
 
 \- joystick/d-pad (move the dot around)
 
-\- Switch Button (isToggled, save/display drawings)
+\- Switch Button x2 (isToggled, save/display drawings)
 
 \- 8x8 led matrix:
 

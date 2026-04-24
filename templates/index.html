@@ -4,6 +4,10 @@
 <style>
     /* matrix.html */
 
+    #matrix-root {
+        display: none;
+    }
+
     .matrix-grid {
         display: grid;
         grid-template-rows: auto auto auto auto auto auto auto auto;
@@ -81,12 +85,13 @@
         <div class='container'>
             <h1 class='title'>MEMORY TEST</h1>
             <h2>Score : <input id='score' value='0' readonly /></h2>
-            <h2>Game State : <input id='game_state' value='Not Connected' readonly /></h2>
+            <h2>Game State : <input id='game-state' value='Connected' readonly /></h2> <!-- default value is 'Not Connected' -->
 
-            <div class='content-box'>
-                <h1>Enter the amount of dots you think you can remember :</h1>
-                <p>(Then click the 'Start the game' button)</p>
-                <input id='dots' type='number' min='1' max='64' value='1' placeholder='Valeur entre 1 - 64'>
+            <div id="content-box" class='content-box'>
+                <h1>Pick a difficulty (Then click the 'Start the game' button) :</h1>
+                <input id='difficulty1' type="button" value="Easy">
+                <input id='difficulty2' type="button" value="Medium">
+                <input id='difficulty3' type="button" value="Hard">
             </div>
 
             <div class='buttons'>
@@ -99,84 +104,84 @@
                 <h2>You can draw on the matrix just by clicking on the circles</h2>
                 <div class='matrix-grid'>
                     <div class='col'>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
+                        <div class='row' id='0x0'></div>
+                        <div class='row' id='0x1'></div>
+                        <div class='row' id='0x2'></div>
+                        <div class='row' id='0x3'></div>
+                        <div class='row' id='0x4'></div>
+                        <div class='row' id='0x5'></div>
+                        <div class='row' id='0x6'></div>
+                        <div class='row' id='0x7'></div>
                     </div>
                     <div class='col'>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
+                        <div class='row' id='1x0'></div>
+                        <div class='row' id='1x1'></div>
+                        <div class='row' id='1x2'></div>
+                        <div class='row' id='1x3'></div>
+                        <div class='row' id='1x4'></div>
+                        <div class='row' id='1x5'></div>
+                        <div class='row' id='1x6'></div>
+                        <div class='row' id='1x7'></div>
                     </div>
                     <div class='col'>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
+                        <div class='row' id='2x0'></div>
+                        <div class='row' id='2x1'></div>
+                        <div class='row' id='2x2'></div>
+                        <div class='row' id='2x3'></div>
+                        <div class='row' id='2x4'></div>
+                        <div class='row' id='2x5'></div>
+                        <div class='row' id='2x6'></div>
+                        <div class='row' id='2x7'></div>
                     </div>
                     <div class='col'>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
+                        <div class='row' id='3x0'></div>
+                        <div class='row' id='3x1'></div>
+                        <div class='row' id='3x2'></div>
+                        <div class='row' id='3x3'></div>
+                        <div class='row' id='3x4'></div>
+                        <div class='row' id='3x5'></div>
+                        <div class='row' id='3x6'></div>
+                        <div class='row' id='3x7'></div>
                     </div>
                     <div class='col'>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
+                        <div class='row' id='4x0'></div>
+                        <div class='row' id='4x1'></div>
+                        <div class='row' id='4x2'></div>
+                        <div class='row' id='4x3'></div>
+                        <div class='row' id='4x4'></div>
+                        <div class='row' id='4x5'></div>
+                        <div class='row' id='4x6'></div>
+                        <div class='row' id='4x7'></div>
                     </div>
                     <div class='col'>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
+                        <div class='row' id='5x0'></div>
+                        <div class='row' id='5x1'></div>
+                        <div class='row' id='5x2'></div>
+                        <div class='row' id='5x3'></div>
+                        <div class='row' id='5x4'></div>
+                        <div class='row' id='5x5'></div>
+                        <div class='row' id='5x6'></div>
+                        <div class='row' id='5x7'></div>
                     </div>
                     <div class='col'>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
+                        <div class='row' id='6x0'></div>
+                        <div class='row' id='6x1'></div>
+                        <div class='row' id='6x2'></div>
+                        <div class='row' id='6x3'></div>
+                        <div class='row' id='6x4'></div>
+                        <div class='row' id='6x5'></div>
+                        <div class='row' id='6x6'></div>
+                        <div class='row' id='6x7'></div>
                     </div>
                     <div class='col'>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
-                        <div class='row'></div>
+                        <div class='row' id='7x0'></div>
+                        <div class='row' id='7x1'></div>
+                        <div class='row' id='7x2'></div>
+                        <div class='row' id='7x3'></div>
+                        <div class='row' id='7x4'></div>
+                        <div class='row' id='7x5'></div>
+                        <div class='row' id='7x6'></div>
+                        <div class='row' id='7x7'></div>
                     </div>
                 </div>
             </div>
@@ -185,27 +190,31 @@
 </body>
 
 <script>
-    // getValues
+    // fetch (score, round et game_state)
     const score = document.getElementById('score');
-    const game_state = document.getElementById('game_state');
+    const game_state = document.getElementById('game-state');
 
     // setGameState
-    const dots = document.getElementById('dots');
-    let dots_amount = dots.value;
+    const difficulty1 = document.getElementById('difficulty1');
+    const difficulty2 = document.getElementById('difficulty2');
+    const difficulty3 = document.getElementById('difficulty3');
+    difficulty1.addEventListener('click', function () {
+        difficulty = difficulty1.value;
+    });
+    difficulty2.addEventListener('click', function () {
+        difficulty = difficulty2.value;
+    });
+    difficulty3.addEventListener('click', function () {
+        difficulty = difficulty3.value;
+    });
+    let difficulty = 'Easy';
 
-    // setMatrix
-    // Initializing the columns & rows in matrix-grid 
-    for (let i = 0; i > 8; i++) {
-        document.createElement('div');
-    }
-
-    // Initializing the ids of the rows in matrix-grid
+    // setMatrix (add event listerner to each 'button' of the 'matrix')
     const cols = document.querySelectorAll('.col');
     let led_position = '';
     cols.forEach((col, columnIndex) => {
         const rows = col.querySelectorAll('.row');
         rows.forEach((row, rowIndex) => {
-            row.id = `${columnIndex}x${rowIndex}`;
             row.addEventListener('click', function () {
                 led_position = row.id;
                 setMatrix();
@@ -213,41 +222,44 @@
         });
     });
 
-    // Can only draw when there is no game in progress
+    // Manage game_state
     if (game_state.value == 'Connected') {
         document.getElementById('matrix-root').style.display = 'initial';
-    } else {
+    }
+    else if (game_state.value == 'Game Started') {
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('content-box').style.display = 'none';
+        
+        // fetch (score, round et game_state)
+        setInterval(() => {
+            fetch('http://192.168.4.1:5000/api/get_game_state')
+                .then(res => res.json())
+                .then(data => {
+
+                    score.value = data.score;
+                    game_state.value = data.state;
+            })
+                .catch(err => console.error('Erreur de synchronisation'));
+        }, 1000);
+    } 
+    else {
+        document.getElementById('startBtn').style.display = 'initial';
         document.getElementById('matrix-root').style.display = 'none';
     }
 
-
-    // setInterval(() => { // getValues (score et round et game_state)
-    //     fetch('http://192.168.4.1:5000/api/get_game_state')
-    //         .then(res => res.json())
-    //         .then(data => {
-
-    //             score.value = data.score;
-    //             game_state.value = data.state;
-    //     })
-    //         .catch(err => console.error('Erreur de synchronisation'));
-    // }, 1000);
-
     async function setGameState(game_state) {
-        dots.addEventListener('input', function () {
-            dots_amount = dots.value;
-        });
         try {
             const res = await fetch('http://192.168.4.1:5000/api/set_game_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ 'game_state': game_state, 'dots': dots_amount })
+                body: JSON.stringify({ 'game_state': game_state, 'difficulty': difficulty })
             });
             var data = res.json();
             if (data.ok) {
                 try {
-                    console.warn('[TEST LOG] : ', data['1']);
+                    // console.warn('[TEST LOG] : ', data['1']);
                     console.log(data);
                 } catch (err) {
                     console.error(err);
@@ -268,7 +280,7 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ 'led_position': led_position })
+                body: JSON.stringify({ 'id': 'matrix_01', 'led_position': led_position })
             });
 
             var data = res.json();

@@ -35,7 +35,7 @@ app = Flask(__name__)
 def get_game_state():
     global score
     global game_state
-    game_state = '' # pi.read(RGB) => bleue = en_jeux, jaune = restarting/ending, blanc = connected
+    game_state = 'Not Connected' # pi.read(RGB) => bleue = en_jeux, jaune = restarting/ending, blanc = connected
     return jsonify({'score': score, 'game_state': game_state}),200
 
 @app.route('/api/set_game_state', methods=['POST'])
@@ -84,8 +84,8 @@ def set_matrix():
 def confirm_btn():
     global score
     global led_sequence
-    curled_position = '' # 0x0 # from joystick
     score = 0
+    curled_position = '' # 0x0 # from joystick
     # ...
     if curled_position == led_sequence[score]:
         score += 1
