@@ -84,8 +84,8 @@
     <div class='root'>
         <div class='container'>
             <h1 class='title'>MEMORY TEST</h1>
-            <h2>Score : <input id='score' value='0' readonly /></h2>
-            <h2>Game State : <input id='game-state' value='Connected' readonly /></h2> <!-- default value is 'Not Connected' -->
+            <h2>Score : <input id='score' value='-1' readonly /></h2>
+            <h2>Game State : <input id='game-state' value='Not Connected' readonly /></h2> <!-- default value is 'Not Connected' -->
 
             <div id="content-box" class='content-box'>
                 <h1>Pick a difficulty (Then click the 'Start the game' button) :</h1>
@@ -232,12 +232,11 @@
         
         // fetch (score, round et game_state)
         setInterval(() => {
-            fetch('http://192.168.4.1:5000/api/get_game_state')
+            fetch('http://127.0.0.1:5000/api/get_game_state')
                 .then(res => res.json())
                 .then(data => {
-
-                    score.value = data.score;
-                    game_state.value = data.state;
+                    game_state.value = data['game_state'];
+                    score.value = data['score'];
             })
                 .catch(err => console.error('Erreur de synchronisation'));
         }, 1000);
@@ -249,7 +248,7 @@
 
     async function setGameState(game_state) {
         try {
-            const res = await fetch('http://192.168.4.1:5000/api/set_game_state', {
+            const res = await fetch('http://127.0.0.1:5000/api/set_game_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -275,7 +274,7 @@
 
     async function setMatrix() {
         try {
-            const res = await fetch('http://192.168.4.1:5000/api/set_matrix', {
+            const res = await fetch('http://127.0.0.1:5000/api/set_matrix', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
