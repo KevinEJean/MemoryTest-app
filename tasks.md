@@ -16,7 +16,7 @@
 
 \- rgb LED (on fail/success/connected)
 
-\- joystick (move the dot around)
+\- joystick/d-pad (move the dot around)
 
 \- Switch Button (isToggled, save/display drawings)
 
