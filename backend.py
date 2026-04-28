@@ -7,37 +7,55 @@ import socket
 # import board
 # import busio
 # from adafruit_ht16k33 import matrix
-
+# from adafruit_ads1x15.ads1115 import ADS1115
+# from adafruit_ads1x15.analog_in import AnalogIn
 # VARIABLE PIGPIO
 
 pi = pigpio.pi()
 # i2c = busio.I2C(board.SCL, board.SDA)
+R,G,B = 21,20,16
+BUZZER = 19
 
-# R,G,B = 0,0,0
-# BUZZER = 0
-# # MATRIX = matrix.Matrix8x8(i2c)
-# BTN = 0
+
+# MATRIX = matrix.Matrix8x8(i2c)
+# ads = ADS1115(i2c)
+BTN = 19
 # JOYSTICK = 0
 
-# pi.set_mode(R, pigpio.OUTPUT)
-# pi.set_mode(G, pigpio.OUTPUT)
-# pi.set_mode(B, pigpio.OUTPUT)
-# pi.set_mode(BUZZER, pigpio.OUTPUT)
+pi.set_mode(R, pigpio.OUTPUT)
+pi.set_mode(G, pigpio.OUTPUT)
+pi.set_mode(B, pigpio.OUTPUT)
+pi.set_mode(BUZZER, pigpio.OUTPUT)
 # pi.set_mode(MATRIX, pigpio.OUTPUT)
-# pi.set_mode(BTN, pigpio.INPUT)
-# pi.set_mode(JOYSTICK, pigpio.INPUT)
+pi.set_mode(BTN, pigpio.INPUT)
+# x = AnalogIn(ads, 0)
+# y = AnalogIn(ads, 1) 
 
+def led_state(r,g,b):
 
+    pi.write(R,r)
+    pi.write(G,g)
+    pi.write(B,b)
 
 app = Flask(__name__)
 CORS(app)
-
 @app.route('/api/get_game_state', methods=['GET'])
 def get_game_state():
     global score
     global game_state
     score = 0
-    game_state = 'Not Connected' # pi.read(RGB) => bleue = en_jeux, jaune = restarting/ending, blanc = connected
+    game_state = 'Game Started' 
+    # pi.read(RGB) => bleue = en_jeux, jaune = restarting/ending, blanc = connected
+    if game_state == "Connected":
+        led_state(0,0,0)
+    if game_state == "Game Started":
+        pi.write(BUZZER,1)
+        time.sleep(1)
+        pi.write(BUZZER,0)
+        led_state(1,1,0)
+    else:
+        led_state(1,1,1)
+        pi.write(BUZZER,0)
     return jsonify({'game_state': game_state, 'score': score}),200
 
 # @app.route('/api/set_game_state', methods=['POST'])
@@ -95,4 +113,4 @@ def confirm_btn():
         pass # allumer la led RGB en rouge & allumer buzzer (bad) & end the game (clean up)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+        app.run(host='0.0.0.0', port=5000)

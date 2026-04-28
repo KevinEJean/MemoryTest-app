@@ -85,7 +85,7 @@
         <div class='container'>
             <h1 class='title'>MEMORY TEST</h1>
             <h2>Score : <input id='score' value='-1' readonly /></h2>
-            <h2>Game State : <input id='game-state' value='Not Connected' readonly /></h2> <!-- default value is 'Not Connected' -->
+            <h2>Game State : <input id='game-state' value='Game Started' readonly /></h2> <!-- default value is 'Not Connected' -->
 
             <div id="content-box" class='content-box'>
                 <h1>Pick a difficulty (Then click the 'Start the game' button) :</h1>
@@ -235,6 +235,7 @@
             fetch('http://127.0.0.1:5000/api/get_game_state')
                 .then(res => res.json())
                 .then(data => {
+                    console.log(data)
                     game_state.value = data['game_state'];
                     score.value = data['score'];
             })
