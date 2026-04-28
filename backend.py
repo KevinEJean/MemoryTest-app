@@ -11,9 +11,11 @@ import adafruit_bus_device.i2c_device as i2c_device
 # VARIABLE PIGPIO
 
 pi = pigpio.pi()
-# i2c = busio.I2C(board.SCL, board.SDA)
+
 R,G,B = 21,20,16
 BUZZER = 19
+# ads = ADS1115(i2c)
+BTN = 19
 
 i2cBus = busio.I2C(board.SCL, board.SDA)
 matrix = i2c_device.I2CDevice(i2cBus, 0x70)
@@ -21,21 +23,15 @@ matrix.write(bytes([0x21])) # Initialiser l'oscillateur du contrôleur
 matrix.write(bytes([0x81])) # Initialiser la matrice de LED 
 matrix.write(bytes([0xEF])) # Initialiser la luminosité
 
-# ads = ADS1115(i2c)
-BTN = 19
-# JOYSTICK = 0
-
 pi.set_mode(R, pigpio.OUTPUT)
 pi.set_mode(G, pigpio.OUTPUT)
 pi.set_mode(B, pigpio.OUTPUT)
 pi.set_mode(BUZZER, pigpio.OUTPUT)
-# pi.set_mode(MATRIX, pigpio.OUTPUT)
 pi.set_mode(BTN, pigpio.INPUT)
 # x = AnalogIn(ads, 0)
 # y = AnalogIn(ads, 1) 
 
 def led_state(r,g,b):
-
     pi.write(R,r)
     pi.write(G,g)
     pi.write(B,b)
