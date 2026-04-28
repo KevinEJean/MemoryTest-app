@@ -84,8 +84,8 @@
     <div class='root'>
         <div class='container'>
             <h1 class='title'>MEMORY TEST</h1>
-            <h2>Score : <input id='score' value='-1' readonly /></h2>
-            <h2>Game State : <input id='game-state' value='Not Connected' readonly /></h2> <!-- default value is 'Not Connected' -->
+            <h2>Score : <input id='score' value='' readonly /></h2>
+            <h2>Game State : <input id='game-state' value='' readonly /></h2> <!-- default value is 'Not Connected' -->
 
             <div id="content-box" class='content-box'>
                 <h1>Pick a difficulty (Then click the 'Start the game' button) :</h1>
@@ -223,74 +223,84 @@
     });
 
     // Manage game_state
-    if (game_state.value == 'Connected') {
-        document.getElementById('matrix-root').style.display = 'initial';
-    }
-    else if (game_state.value == 'Game Started') {
-        document.getElementById('startBtn').style.display = 'none';
-        document.getElementById('content-box').style.display = 'none';
-        
-        // fetch (score, round et game_state)
-        setInterval(() => {
-            fetch('http://127.0.0.1:5000/api/get_game_state')
-                .then(res => res.json())
-                .then(data => {
-                    game_state.value = data['game_state'];
-                    score.value = data['score'];
-            })
-                .catch(err => console.error('Erreur de synchronisation'));
-        }, 1000);
-    } 
-    else {
-        document.getElementById('startBtn').style.display = 'initial';
-        document.getElementById('matrix-root').style.display = 'none';
-    }
+    setInterval(() => {
+        if (game_state.value == 'Connected') {
+            document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('matrix-root').style.display = 'block';
+        }
+        else if (game_state.value == 'Game Started') {
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('content-box').style.display = 'none';
+            document.getElementById('matrix-root').style.display = 'none';
+        } 
+        else {
+            document.getElementById('startBtn').style.display = 'initial';
+            document.getElementById('content-box').style.display = 'block';
+            document.getElementById('matrix-root').style.display = 'none';
+        }
+    }, 1000);
 
-    async function setGameState(game_state) {
+
+    
+    const getValues = setInterval(() => {
+        fetch('http://127.0.0.1:5000/api/get_game_state')
+            .then(res => res.json())
+            .then(data => {
+                game_state.value = data['game_state'];
+                score.value = data['score'];
+        })
+            .catch(err => console.error('Erreur de synchronisation (get_game_state)'));
+    }, 1000);
+
+
+
+    async function setGameState(state) {
         try {
-            const res = await fetch('http://127.0.0.1:5000/api/set_game_state', {
+            const response = await fetch('http://127.0.0.1:5000/api/set_game_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ 'game_state': game_state, 'difficulty': difficulty })
+                body: JSON.stringify({ 'game_state': state, 'difficulty': difficulty })
             });
-            var data = res.json();
-            if (data.ok) {
-                try {
-                    // console.warn('[TEST LOG] : ', data['1']);
-                    console.log(data);
-                } catch (err) {
-                    console.error(err);
-                }
+            const data = await response.json();
+            if (!data.ok) {
+                game_state.value = data.game_state;
             } else {
-                console.error('Erreur de synchronisation');
+                game_state.value = 'Not Connected';
+                console.error('Erreur de synchronisation (set_game_state)')
             }
-
         } catch (err) {
             console.error(err);
         }
     }
 
     async function setMatrix() {
+        var led_state = '';
+        const curLed = document.getElementById(`${led_position}`);
+        if (curLed.style.backgroundColor == 'red') {
+            led_state = 'off';
+        } else {
+            led_state = 'on';
+        }
         try {
             const res = await fetch('http://127.0.0.1:5000/api/set_matrix', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ 'id': 'matrix_01', 'led_position': led_position })
+                body: JSON.stringify({ 'id': 'matrix_01', 'led_position': led_position, 'led_state': led_state})
             });
 
-            var data = res.json();
-            if (data.ok) {
-                if (data.led_state == 'ON') {
+            var data = await res.json();
+            if (!data.ok) {
+                if (data.led_state == 'on') {
                     document.getElementById(`${data.led_position}`).style.backgroundColor = 'red';
                 } else {
                     document.getElementById(`${data.led_position}`).style.backgroundColor = 'grey';
                 }
             } else {
-                console.error('Erreur de synchronisation');
+                console.error('Erreur de synchronisation (set_matrix)');
             }
 
         } catch (err) {
