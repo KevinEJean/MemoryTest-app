@@ -7,43 +7,60 @@ import socket
 import board
 import busio
 import adafruit_bus_device.i2c_device as i2c_device
-import dict_matrix
 
 # VARIABLE PIGPIO
 
 pi = pigpio.pi()
+# i2c = busio.I2C(board.SCL, board.SDA)
+R,G,B = 21,20,16
+BUZZER = 19
+
 i2cBus = busio.I2C(board.SCL, board.SDA)
 matrix = i2c_device.I2CDevice(i2cBus, 0x70)
 matrix.write(bytes([0x21])) # Initialiser l'oscillateur du contrôleur
 matrix.write(bytes([0x81])) # Initialiser la matrice de LED 
 matrix.write(bytes([0xEF])) # Initialiser la luminosité
 
-# R,G,B = 0,0,0
-# BUZZER = 0
-# BTN = 0
+# ads = ADS1115(i2c)
+BTN = 19
 # JOYSTICK = 0
 
-# pi.set_mode(R, pigpio.OUTPUT)
-# pi.set_mode(G, pigpio.OUTPUT)
-# pi.set_mode(B, pigpio.OUTPUT)
-# pi.set_mode(BUZZER, pigpio.OUTPUT)
-# pi.set_mode(BTN, pigpio.INPUT)
-# pi.set_mode(JOYSTICK, pigpio.INPUT)
+pi.set_mode(R, pigpio.OUTPUT)
+pi.set_mode(G, pigpio.OUTPUT)
+pi.set_mode(B, pigpio.OUTPUT)
+pi.set_mode(BUZZER, pigpio.OUTPUT)
+# pi.set_mode(MATRIX, pigpio.OUTPUT)
+pi.set_mode(BTN, pigpio.INPUT)
+# x = AnalogIn(ads, 0)
+# y = AnalogIn(ads, 1) 
 
+def led_state(r,g,b):
 
+    pi.write(R,r)
+    pi.write(G,g)
+    pi.write(B,b)
 
 app = Flask(__name__)
 CORS(app)
 
-game_state = 'Not Connected'
+game_state = 'Connected'
 
 @app.route('/api/get_game_state', methods=['GET'])
 def get_game_state():
     global score
     global game_state
     score = 0
-    # pi.read(RGB) => bleue = en_jeux, jaune = restarting/ending, blanc = connected
-      
+    # bleue = en_jeux, jaune = restarting/ending, blanc = connected
+    if game_state == "Connected":
+        led_state(0,0,0)
+    if game_state == "Game Started":
+        pi.write(BUZZER,1)
+        time.sleep(1)
+        pi.write(BUZZER,0)
+        led_state(1,1,0)
+    else:
+        led_state(1,1,1)
+        pi.write(BUZZER,0)
     return jsonify({'game_state': game_state, 'score': score}),200
 
 @app.route('/api/set_game_state', methods=['POST'])
@@ -84,16 +101,16 @@ def set_game_state():
     return jsonify({'game_state': game_state}),200
 
 @app.route('/api/set_matrix', methods=['POST'])
-def set_matrix():
-    led_position = '' # 0x0
-    led_state = '' # on/off
+def set_matrix(): # only turns on 1 led in each column
+    led_position = ''
+    led_state = ''
     if request.method == "POST":
         json = request.get_json()
         if game_state == 'Connected':
             if 'led_position' in json and 'led_state' in json:
                 led_position = json['led_position'].split('x')
                 led_state = json['led_state']
-                values = dict_matrix.converter(led_position[0], led_position[1])
+                values = converter(led_position[0], led_position[1])
                 if led_state == 'off':
                     matrix.write(bytes([values[0], 0]))
                 elif led_state == 'on':
@@ -148,18 +165,6 @@ def converter(col, row):
             row_num = 128
 
     return [col_byte, row_num]
-
-# # thread 'confirm_btn()' 
-# def confirm_btn():
-#     global score
-#     global led_sequence
-#     str_led_position = '' # 0x0 # from joystick
-#     # ...
-#     if str_led_position == led_sequence[score]:
-#         score += 1
-#         # allumer la led RGB en vert & allumer buzzer (good)
-#     else:
-#         pass # allumer la led RGB en rouge & allumer buzzer (bad) & end the game (clean up)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000) # host='192.168.17.1'
