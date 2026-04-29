@@ -108,12 +108,12 @@ def set_matrix(): # only turns on 1 led in each column
                 led_position = json['led_position'].split('x')
                 led_state = json['led_state']
                 values = converter(led_position[0], led_position[1])
-                # sum += values[1]
-                # sum -= values[1]
                 if led_state == 'off':
+                    # sum -= values[1]
                     matrix.write(bytes([values[0], 0]))
                 elif led_state == 'on':
                     matrix.write(bytes([values[0], values[1]]))
+                    # sum += values[1]
                     # matrix.write(bytes([values[0], sum))
                 else:
                     return jsonify({'Erreur': 'Mauvaise valeur'}),500
