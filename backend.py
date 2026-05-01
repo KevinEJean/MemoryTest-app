@@ -16,6 +16,7 @@ R,G,B = 21,20,16
 BUZZER = 19
 # ads = ADS1115(i2c)
 BTN = 19
+buzzer_triggered = False
 
 i2cBus = busio.I2C(board.SCL, board.SDA)
 matrix = i2c_device.I2CDevice(i2cBus, 0x70)
@@ -45,15 +46,18 @@ game_state = 'Connected'
 def get_game_state():
     global score
     global game_state
+    global buzzer_triggered
     score = 0
     # bleue = en_jeux, jaune = restarting/ending, blanc = connected
     if game_state == "Connected":
         led_state(0,0,0)
-    if game_state == "Game Started":
+    if game_state == "Game Started" and not buzzer_triggered:
+        led_state(1,1,0)
         pi.write(BUZZER,1)
         time.sleep(1)
         pi.write(BUZZER,0)
-        led_state(1,1,0)
+
+        buzzer_triggered = True
     else:
         led_state(1,1,1)
         pi.write(BUZZER,0)
