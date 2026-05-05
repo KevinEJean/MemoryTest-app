@@ -90,7 +90,7 @@
             <div id="content-box" class='content-box'>
                 <h1>Pick a difficulty (Then click the 'Start the game' button) :</h1>
                 <input id='difficulty1' type="button" value="Easy">
-                <input id='difficulty2' type="button" value="Medium">
+                <input id='difficulty2' type="button" value="Normal">
                 <input id='difficulty3' type="button" value="Hard">
             </div>
 
@@ -226,24 +226,31 @@
     setInterval(() => {
         if (game_state.value == 'Connected') {
             document.getElementById('startBtn').style.display = 'block';
+            document.getElementById('content-box').style.display = 'block';
             document.getElementById('matrix-root').style.display = 'block';
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('endBtn').style.display = 'none';
         }
         else if (game_state.value == 'Game Started') {
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('content-box').style.display = 'none';
             document.getElementById('matrix-root').style.display = 'none';
-        } 
+            document.getElementById('resetBtn').style.display = 'block';
+            document.getElementById('endBtn').style.display = 'block';
+        }
         else {
-            document.getElementById('startBtn').style.display = 'initial';
-            document.getElementById('content-box').style.display = 'block';
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('content-box').style.display = 'none';
             document.getElementById('matrix-root').style.display = 'none';
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('endBtn').style.display = 'none';
         }
     }, 1000);
 
 
     
     const getValues = setInterval(() => {
-        fetch('http://127.0.0.1:5000/api/get_game_state')
+        fetch('http://192.168.17.1:5000/api/get_game_state')
             .then(res => res.json())
             .then(data => {
                 game_state.value = data['game_state'];
@@ -259,7 +266,7 @@
 
     async function setGameState(state) {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/set_game_state', {
+            const response = await fetch('http://192.168.17.1:5000/api/set_game_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -288,7 +295,7 @@
             led_state = 'on';
         }
         try {
-            const res = await fetch('http://127.0.0.1:5000/api/set_matrix', {
+            const res = await fetch('http://192.168.17.1:5000/api/set_matrix', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -7,11 +7,15 @@ import socket
 import board
 import busio
 import adafruit_bus_device.i2c_device as i2c_device
+from adafruit_ads1x15.ads1115 import ADS1115
+from adafruit_ads1x15.analog_in import AnalogIn
 import random
 
 # VARIABLE PIGPIO
 
 pi = pigpio.pi()
+i2c = busio.I2C(board.SCL, board.SDA)
+matrix = i2c_device.I2CDevice(i2c, 0x70)
 
 R,G,B = 21,20,16
 BUZZER = 19
@@ -19,8 +23,6 @@ ads = ADS1115(i2c)
 BTN = 19
 buzzer_triggered = False
 
-i2cBus = busio.I2C(board.SCL, board.SDA)
-matrix = i2c_device.I2CDevice(i2cBus, 0x70)
 matrix.write(bytes([0x21]))
 matrix.write(bytes([0x81]))
 matrix.write(bytes([0xEF]))
@@ -30,8 +32,20 @@ pi.set_mode(G, pigpio.OUTPUT)
 pi.set_mode(B, pigpio.OUTPUT)
 pi.set_mode(BUZZER, pigpio.OUTPUT)
 pi.set_mode(BTN, pigpio.INPUT)
-# x = AnalogIn(ads, 0)
-# y = AnalogIn(ads, 1) 
+x = AnalogIn(ads, 0)
+y = AnalogIn(ads, 1)
+
+# --- CONFIGURATION ---
+global NUM_TARGETS
+MOVE_SPEED = 0.4
+CENTER_VAL = 13250
+DEAD_ZONE = 8000
+NUM_TARGETS = 10  # Set how many dots you want
+
+global dot_x
+dot_x = 0.0
+global dot_y
+dot_y = 7.0
 
 def led_state(r,g,b):
     pi.write(R,r)
@@ -68,7 +82,10 @@ def get_game_state():
 def set_game_state():
     global led_sequence
     global game_state
-    led_sequence = []
+    global dot_x
+    global dot_y
+    global score
+    targets = []
     col = 0x00
     row = 0
     if request.method == "POST":
@@ -77,41 +94,62 @@ def set_game_state():
             if json['game_state'] == 'start':
                 game_state = 'Game Started'
                 clearMatrix()
+                if json['difficulty'] == 'Easy':
+                    NUM_TARGETS = 10
+                elif json['difficulty'] == 'Normal':
+                    NUM_TARGETS = 15
+                elif json['difficulty'] == 'Hard':
+                    NUM_TARGETS = 20
 
+                for _ in range(NUM_TARGETS):
+                    targets.append([random.randint(0, 7), random.randint(0, 7)])
+
+                # Setup Matrix
                 with matrix as mem:
-                    mem.write(bytes([0x81])) # Matrix ON
-                    mem.write(bytes([0xEF])) # Brightness
+                    mem.write(bytes([0x21])) 
+                    mem.write(bytes([0x81])) 
+                    mem.write(bytes([0xEF])) 
 
                 try:
-                    while True:
-                        # 1. Get the 'tilt' from the joystick
-                        change_x = calculate_step(x_pin.value)
-                        change_y = calculate_step(y_pin.value)
+                    while game_state == 'Game Started':
+                        # 1. Update Player Position
+                        dot_x = max(0.0, min(7.0, dot_x + calculate_step(x.value)))
+                        dot_y = max(0.0, min(7.0, dot_y + calculate_step(y.value)))
+                        px, py = int(round(dot_x)), int(round(dot_y))
 
-                        # 2. Add the change to the previous position
-                        # If change_x is 0, dot_x stays exactly the same.
-                        dot_x += change_x
-                        dot_y += change_y 
+                        # 2. COLLISION DETECTION (Capture and Remove)
+                        # We loop through a copy of the list [:] so we don't crash while removing items
+                        for t in targets[:]: 
+                            if px == t[0] and py == t[1]:
+                                targets.remove(t) # Remove the dot from existence!
+                                score += 1
+                                print(f"Captured! {len(targets)} dots remaining. Score : {score}")
 
-                        # 3. Keep the dot inside the 0-7 boundaries
-                        dot_x = max(0.0, min(7.0, dot_x))
-                        dot_y = max(0.0, min(7.0, dot_y))
+                        # 3. WIN CONDITION
+                        if not targets:
+                            print("Level Cleared! Spawning new wave...")
+                            time.sleep(1)
+                            # Re-spawn 10 new dots if you want the game to loop
+                            targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(10)]
 
-                        # 4. Convert the math (float) to the LED pixel (int)
-                        display_x = int(round(dot_x))
-                        display_y = int(round(dot_y))
-
-                        # 5. Send data to the 8x8 Matrix
-                        buffer = bytearray([0] * 17) 
-                        buffer[0] = 0x00 
-                        row_index = (display_y * 2) + 1 
-                        buffer[row_index] = (1 << display_x)
+                        # 4. RENDER
+                        buffer = bytearray([0] * 17)
+                        buffer[0] = 0x00
+                        
+                        # Draw remaining targets
+                        for t in targets:
+                            row_idx = (t[1] * 2) + 1
+                            buffer[row_idx] |= (1 << t[0])
+                            
+                        # Draw player
+                        player_row_idx = (py * 2) + 1
+                        buffer[player_row_idx] |= (1 << px)
 
                         with matrix as mem:
                             mem.write(buffer)
 
-                        # Small delay for a smooth 50Hz refresh rate
                         time.sleep(0.02)
+
                 except:
                     clearMatrix()
                     pass
@@ -119,6 +157,7 @@ def set_game_state():
             elif json['game_state'] == 'restart':
                 game_state = 'Connected'
                 clearMatrix()
+
             elif json['game_state'] == 'end':
                 game_state = 'Connected'
                 clearMatrix()
@@ -130,7 +169,7 @@ def set_game_state():
       return jsonify({'Erreur': 'Requetes POST seulement'}),500
 
 
-    return jsonify({'game_state': game_state, 'led_sequence': led_sequence}),200
+    return jsonify({'game_state': game_state, 'led_sequence': targets}),200
 
 # @app.route('/api/set_matrix', methods=['POST'])
 # def set_matrix(): # only turns on 1 led in each column
@@ -167,6 +206,11 @@ def clearMatrix():
         mem.write(bytearray([0x00] * 17))
     
     time.sleep(0.5)
+
+def calculate_step(raw_value):
+    diff = raw_value - CENTER_VAL
+    if abs(diff) < DEAD_ZONE: return 0
+    return (diff / 16000) * MOVE_SPEED
 
 
 # def converter(col, row):
@@ -210,4 +254,4 @@ def clearMatrix():
 #     return [col_byte, row_num]
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000) # host='192.168.17.1'
+    app.run(host='192.168.17.1', port=5000) # host='192.168.17.1'
