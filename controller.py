@@ -1,81 +1,84 @@
 import busio
 import board
 import time
+import random
 from adafruit_ads1x15.ads1115 import ADS1115
 from adafruit_ads1x15.analog_in import AnalogIn
 import adafruit_bus_device.i2c_device as i2c_device
 
-# Initialisation
+# --- INITIALIZATION ---
 i2c = busio.I2C(board.SCL, board.SDA)
-i2cBus = busio.I2C(board.SCL, board.SDA) 
 ads = ADS1115(i2c)
-matrix_device = i2c_device.I2CDevice(i2cBus, 0x77)
+matrix_device = i2c_device.I2CDevice(i2c, 0x77)
 
 x_pin = AnalogIn(ads, 0)
 y_pin = AnalogIn(ads, 1) 
 
 # --- CONFIGURATION ---
-GRID_SIZE = 8
-# The dead zone prevents the dot from drifting when you aren't touching the stick
-DEAD_ZONE = 8000     
-# Adjust this to control how fast the dot travels across the screen
-# Lower = Slower (e.g., 0.05 is very slow)
-MOVE_SPEED = 0.2     
-CENTER_VAL = 13250   # This represents the "Resting" state of your joystick
+MOVE_SPEED = 0.3
+CENTER_VAL = 13250
+DEAD_ZONE = 8000
+NUM_TARGETS = 10  # Set how many dots you want
 
-# These variables "remember" where the dot is. 
-# They are only updated when the joystick is moved.
-dot_x = 0.0
-dot_y = 7.0
+# Player Setup
+dot_x, dot_y = 0.0, 7.0
+
+# --- TARGET SYSTEM ---
+# This creates a list of 10 random [x, y] pairs
+targets = []
+for _ in range(NUM_TARGETS):
+    targets.append([random.randint(0, 7), random.randint(0, 7)])
 
 def calculate_step(raw_value):
     diff = raw_value - CENTER_VAL
-    
-    # If within the dead zone, change is 0 (stays where it was)
-    if abs(diff) < DEAD_ZONE:
-        return 0
-    
-    # Scale the movement. 16000 is approx the distance from center to max tilt.
-    step = (diff / 16000) * MOVE_SPEED
+    if abs(diff) < DEAD_ZONE: return 0
+    return (diff / 16000) * MOVE_SPEED
 
-    return step
-
+# Setup Matrix
 with matrix_device as mem:
-    mem.write(bytes([0x81])) # Matrix ON
-    mem.write(bytes([0xEF])) # Brightness
+    mem.write(bytes([0x21])) 
+    mem.write(bytes([0x81])) 
+    mem.write(bytes([0xEF])) 
 
 try:
     while True:
-        # 1. Get the 'tilt' from the joystick
-        change_x = calculate_step(x_pin.value)
-        change_y = calculate_step(y_pin.value)
+        # 1. Update Player Position
+        dot_x = max(0.0, min(7.0, dot_x + calculate_step(x_pin.value)))
+        dot_y = max(0.0, min(7.0, dot_y + calculate_step(y_pin.value)))
+        px, py = int(round(dot_x)), int(round(dot_y))
 
-        # 2. Add the change to the previous position
-        # If change_x is 0, dot_x stays exactly the same.
-        dot_x += change_x
-        dot_y += change_y 
+        # 2. COLLISION DETECTION (Capture and Remove)
+        # We loop through a copy of the list [:] so we don't crash while removing items
+        for t in targets[:]: 
+            if px == t[0] and py == t[1]:
+                targets.remove(t) # Remove the dot from existence!
+                print(f"Captured! {len(targets)} dots remaining.")
 
-        # 3. Keep the dot inside the 0-7 boundaries
-        dot_x = max(0.0, min(7.0, dot_x))
-        dot_y = max(0.0, min(7.0, dot_y))
+        # 3. WIN CONDITION
+        if not targets:
+            print("Level Cleared! Spawning new wave...")
+            time.sleep(1)
+            # Re-spawn 10 new dots if you want the game to loop
+            targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(10)]
 
-        # 4. Convert the math (float) to the LED pixel (int)
-        display_x = int(round(dot_x))
-        display_y = int(round(dot_y))
-
-        # 5. Send data to the 8x8 Matrix
-        buffer = bytearray([0] * 17) 
-        buffer[0] = 0x00 
-        row_index = (display_y * 2) + 1 
-        buffer[row_index] = (1 << display_x)
+        # 4. RENDER
+        buffer = bytearray([0] * 17)
+        buffer[0] = 0x00
+        
+        # Draw remaining targets
+        for t in targets:
+            row_idx = (t[1] * 2) + 1
+            buffer[row_idx] |= (1 << t[0])
+            
+        # Draw player
+        player_row_idx = (py * 2) + 1
+        buffer[player_row_idx] |= (1 << px)
 
         with matrix_device as mem:
             mem.write(buffer)
 
-        # Small delay for a smooth 50Hz refresh rate
-        time.sleep(0.02) 
+        time.sleep(0.02)
 
 except KeyboardInterrupt:
     with matrix_device as mem:
         mem.write(bytearray([0x00] * 17))
-    print("Programme interrompu.")
