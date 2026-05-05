@@ -3,52 +3,79 @@ import board
 import time
 from adafruit_ads1x15.ads1115 import ADS1115
 from adafruit_ads1x15.analog_in import AnalogIn
- 
-# Initialisation de l'interface i2c
+import adafruit_bus_device.i2c_device as i2c_device
+
+# Initialisation
 i2c = busio.I2C(board.SCL, board.SDA)
- 
-# Créer une instance de la classe ADS1115 
-# et l'associer à l'interface i2c
+i2cBus = busio.I2C(board.SCL, board.SDA) 
 ads = ADS1115(i2c)
- 
-# Créer une instance d'entrée analogique
-# et l'associer à la broche 0 du module ADC
-x = AnalogIn(ads, 0)
-y = AnalogIn(ads, 1) 
+matrix_device = i2c_device.I2CDevice(i2cBus, 0x77)
 
-# Grid size for matrix
+x_pin = AnalogIn(ads, 0)
+y_pin = AnalogIn(ads, 1) 
+
+# --- CONFIGURATION ---
 GRID_SIZE = 8
-MAXIMUM_VALUE_FOR_8BIT = 32767
-# Dead zone threshold (optional, depending on joystick behavior)
-DEAD_ZONE = 1000
+# The dead zone prevents the dot from drifting when you aren't touching the stick
+DEAD_ZONE = 8000     
+# Adjust this to control how fast the dot travels across the screen
+# Lower = Slower (e.g., 0.05 is very slow)
+MOVE_SPEED = 0.2     
+CENTER_VAL = 13250   # This represents the "Resting" state of your joystick
 
-# Number of readings to average
-NUM_SAMPLES = 10
+# These variables "remember" where the dot is. 
+# They are only updated when the joystick is moved.
+dot_x = 0.0
+dot_y = 7.0
 
-def read_average(channel):
-    """Take multiple samples and return the average"""
-    readings = [channel.value for _ in range(NUM_SAMPLES)]
-    return sum(readings) // len(readings)
+def calculate_step(raw_value):
+    diff = raw_value - CENTER_VAL
+    
+    # If within the dead zone, change is 0 (stays where it was)
+    if abs(diff) < DEAD_ZONE:
+        return 0
+    
+    # Scale the movement. 16000 is approx the distance from center to max tilt.
+    step = (diff / 16000) * MOVE_SPEED
 
-def scale_value(value, max_val=65535,  grid_size=GRID_SIZE):
-    # Scales avec la matrix
-    return int((value / max_val) * (grid_size - 1))
+    return step
+
+with matrix_device as mem:
+    mem.write(bytes([0x81])) # Matrix ON
+    mem.write(bytes([0xEF])) # Brightness
 
 try:
     while True:
-        raw_x = read_average(x)
-        raw_y = read_average(y)
+        # 1. Get the 'tilt' from the joystick
+        change_x = calculate_step(x_pin.value)
+        change_y = calculate_step(y_pin.value)
 
-        if abs(raw_x - MAXIMUM_VALUE_FOR_8BIT) < DEAD_ZONE:  
-            raw_x = MAXIMUM_VALUE_FOR_8BIT
-        if abs(raw_y - MAXIMUM_VALUE_FOR_8BIT) < DEAD_ZONE:
-            raw_y = MAXIMUM_VALUE_FOR_8BIT
-        
-        # Apply scaling to convert ADC values to a usable range (-1 to 1)
-        grid_x = scale_value(raw_x)
-        grid_y = scale_value(raw_y)
+        # 2. Add the change to the previous position
+        # If change_x is 0, dot_x stays exactly the same.
+        dot_x += change_x
+        dot_y += change_y 
 
-        print(f"Joystick Position -> X: {grid_x}, Y: {grid_y}")
+        # 3. Keep the dot inside the 0-7 boundaries
+        dot_x = max(0.0, min(7.0, dot_x))
+        dot_y = max(0.0, min(7.0, dot_y))
+
+        # 4. Convert the math (float) to the LED pixel (int)
+        display_x = int(round(dot_x))
+        display_y = int(round(dot_y))
+
+        # 5. Send data to the 8x8 Matrix
+        buffer = bytearray([0] * 17) 
+        buffer[0] = 0x00 
+        row_index = (display_y * 2) + 1 
+        buffer[row_index] = (1 << display_x)
+
+        with matrix_device as mem:
+            mem.write(buffer)
+
+        # Small delay for a smooth 50Hz refresh rate
+        time.sleep(0.02) 
 
 except KeyboardInterrupt:
+    with matrix_device as mem:
+        mem.write(bytearray([0x00] * 17))
     print("Programme interrompu.")
