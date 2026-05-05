@@ -123,14 +123,15 @@ def set_game_state():
                             if px == t[0] and py == t[1]:
                                 targets.remove(t) # Remove the dot from existence!
                                 score += 1
-                                print(f"Captured! {len(targets)} dots remaining. Score : {score}")
+                                # clien.publish("SCORE", "{score}")
+                                print(f"Captured! {len(targets)} dots remaining.") # send to pi B (ex.: "Player01 : Captured! {len(targets)} dots remaining.")
 
                         # 3. WIN CONDITION
                         if not targets:
-                            print("Level Cleared! Spawning new wave...")
+                            print("Level Cleared! Spawning new wave...") # send to pi B (ex.: "Player01 : Level Cleared! Spawning new wave...")
                             time.sleep(1)
                             # Re-spawn 10 new dots if you want the game to loop
-                            targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(10)]
+                            targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(NUM_TARGETS)]
 
                         # 4. RENDER
                         buffer = bytearray([0] * 17)
