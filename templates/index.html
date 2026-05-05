@@ -249,7 +249,10 @@
                 game_state.value = data['game_state'];
                 score.value = data['score'];
         })
-            .catch(err => console.error('Erreur de synchronisation (get_game_state)'));
+            .catch(err => {
+                console.error('Erreur de synchronisation (get_game_state)');
+                game_state.value = 'Not Connected';
+            });
     }, 1000);
 
 
@@ -265,7 +268,8 @@
             });
             const data = await response.json();
             if (!data.ok) {
-                game_state.value = data.game_state;
+                game_state.value = data['game_state'];
+                console.log(data['led_sequence']);
             } else {
                 game_state.value = 'Not Connected';
                 console.error('Erreur de synchronisation (set_game_state)')
