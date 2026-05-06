@@ -15,10 +15,14 @@ x_pin = AnalogIn(ads, 0)
 y_pin = AnalogIn(ads, 1)
 
 # MQQT Initialisation 
-# BROKER = "10.10.21.161"
-# PORT = 1883
-# GAME_TOPIC = "map"
+BROKER = "10.10.21.149"
+PORT = 1883
+GAME_TOPIC = "map"
 
+# Data a envoyer par MQQT
+player1_data = {
+    "scores" : None
+}
 # Scoring and Rounds
 rounds = 0
 scores = 0
@@ -56,9 +60,9 @@ def publication(client, userdata, mid, code, properties):
     print("Envoi confirmé message #" + str(scores))
 
 # Connexion MQQT
-# client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
-# client.on_connect = connexion
-# client.on_message = reception_msg
+client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
+client.on_connect = connexion
+client.on_message = reception_msg
 # client.on_publish = publication
 
 # Setup Matrix
@@ -68,7 +72,7 @@ with matrix_device as mem:
     mem.write(bytes([0xEF])) 
 
 try:
-    # client.connect(BROKER, PORT)
+    client.connect(BROKER, PORT)
     while True:
         # 1. Update Player Position
         dot_x = max(0.0, min(7.0, dot_x + calculate_step(x_pin.value)))
@@ -91,8 +95,11 @@ try:
             rounds += 1
             # Re-spawn 10 new dots if you want the game to loop
             targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(10)]
-            if rounds == 3:
+            if rounds == 1:
                 print("Fin du programme")
+                player1_data["score"] = scores
+                json_payload = json.dumps(player1_data)
+                client.publish(GAME_TOPIC, json_payload)
                 with matrix_device as mem:
                     mem.write(bytearray([0x00] * 17))               
                 break 
