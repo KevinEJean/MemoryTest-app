@@ -10,23 +10,41 @@ import adafruit_bus_device.i2c_device as i2c_device
 from adafruit_ads1x15.ads1115 import ADS1115
 from adafruit_ads1x15.analog_in import AnalogIn
 import random
+import paho.mqtt.client as pmc
 
 # VARIABLE PIGPIO
-
 pi = pigpio.pi()
 i2c = busio.I2C(board.SCL, board.SDA)
 matrix = i2c_device.I2CDevice(i2c, 0x70)
-
 R,G,B = 21,20,16
 BUZZER = 19
 ads = ADS1115(i2c)
 BTN = 19
-buzzer_triggered = False
+# Flask
+app = Flask(__name__)
+CORS(app)
 
+# MQQT Variables
+
+# Broker = 10.10.41.134
+# GAME_TOPIC = "map"
+# PORT = 1883
+
+# Donne des joueurs
+
+player1_data = {
+    "score" : None
+}
+player2_data = {
+    "score" : None
+}
+
+# Initialisation de la matrix 8x8
 matrix.write(bytes([0x21]))
 matrix.write(bytes([0x81]))
 matrix.write(bytes([0xEF]))
 
+# les déclarations de pi
 pi.set_mode(R, pigpio.OUTPUT)
 pi.set_mode(G, pigpio.OUTPUT)
 pi.set_mode(B, pigpio.OUTPUT)
@@ -41,19 +59,48 @@ MOVE_SPEED = 0.4
 CENTER_VAL = 13250
 DEAD_ZONE = 8000
 NUM_TARGETS = 10  # Set how many dots you want
+buzzer_triggered = False
 
+# Initial for the dot
 global dot_x
 dot_x = 0.0
 global dot_y
 dot_y = 7.0
-
+# Function to return color of rgb with r,g,b = 1 or 0
 def led_state(r,g,b):
     pi.write(R,r)
     pi.write(G,g)
     pi.write(B,b)
 
-app = Flask(__name__)
-CORS(app)
+# Function to clear the matrix board
+def clearMatrix():
+    with matrix as mem:
+        mem.write(bytearray([0x00] * 17))
+    
+    time.sleep(0.5)
+
+# Fonction to calculate the movement of the joystick
+def calculate_step(raw_value):
+    diff = raw_value - CENTER_VAL
+    if abs(diff) < DEAD_ZONE: return 0
+    return (diff / 16000) * MOVE_SPEED
+    
+# def connexion(client, userdata, flags, code, properties):
+#     if code == 0:
+#         print("Connecté")
+#     else:
+#         print("Erreur code %d\n", code)
+
+# def reception_msg(cl,userdata,msg):
+#     print("Reçu:",msg.payload.decode())
+
+# mqtt_client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
+# mqtt_client.on_connect = connexion
+# mqtt_client.on_message = reception_msg
+# mqtt_client.on_publish = publication
+# mqtt_client.connect(BROKER, PORT)
+ 
+# threading.Thread(target=mqtt_client.loop_forever, daemon=True).start()
 
 game_state = 'Connected'
 
@@ -97,9 +144,9 @@ def set_game_state():
                 if json['difficulty'] == 'Easy':
                     NUM_TARGETS = 10
                 elif json['difficulty'] == 'Normal':
-                    NUM_TARGETS = 15
+                    NUM_TARGETS = 7
                 elif json['difficulty'] == 'Hard':
-                    NUM_TARGETS = 20
+                    NUM_TARGETS = 5
 
                 for _ in range(NUM_TARGETS):
                     targets.append([random.randint(0, 7), random.randint(0, 7)])
@@ -201,17 +248,6 @@ def set_game_state():
 #         return jsonify({'Erreur': 'Requetes POST seulement'}),500
 
 #     return jsonify({'led_position': json['led_position'], 'led_state': json['led_state']}),200
-
-def clearMatrix():
-    with matrix as mem:
-        mem.write(bytearray([0x00] * 17))
-    
-    time.sleep(0.5)
-
-def calculate_step(raw_value):
-    diff = raw_value - CENTER_VAL
-    if abs(diff) < DEAD_ZONE: return 0
-    return (diff / 16000) * MOVE_SPEED
 
 
 # def converter(col, row):
