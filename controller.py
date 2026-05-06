@@ -97,7 +97,7 @@ try:
             targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(10)]
             if rounds == 1:
                 print("Fin du programme")
-                player1_data["score"] = scores
+                player1_data["scores"] = scores
                 json_payload = json.dumps(player1_data)
                 client.publish(GAME_TOPIC, json_payload)
                 with matrix_device as mem:
