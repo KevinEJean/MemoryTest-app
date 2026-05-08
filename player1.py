@@ -10,12 +10,12 @@ import json
 # --- INITIALIZATION de Raspi Pi---
 i2c = busio.I2C(board.SCL, board.SDA)
 ads = ADS1115(i2c)
-matrix_device = i2c_device.I2CDevice(i2c, 0x77)
+matrix_device = i2c_device.I2CDevice(i2c, 0x70)
 x_pin = AnalogIn(ads, 0)
 y_pin = AnalogIn(ads, 1)
 
 # MQQT Initialisation 
-BROKER = "10.10.21.149"
+BROKER = "10.10.21.144"
 PORT = 1883
 GAME_TOPIC = "map"
 

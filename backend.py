@@ -26,9 +26,9 @@ app = Flask(__name__)
 CORS(app)
 
 # MQQT Variables
-# Broker = 10.10.41.134
-# GAME_TOPIC = "map"
-# PORT = 1883
+Broker = "10.10.21.144"
+GAME_TOPIC = "map"
+PORT = 1883
 
 # Donne des joueurs
 player1_data = {
@@ -86,35 +86,49 @@ def calculate_step(raw_value):
     
 def connexion(client, userdata, flags, code, properties):
     if code == 0:
+        mqtt_client.subscribe("map")
         print("Connecté")
     else:
         print("Erreur code %d\n", code)
 
 def reception_msg(cl,userdata,msg):
-    print("Reçu:",msg.payload.decode())
+    message = msg.payload.decode()
 
-def map_display():
+    if "player1_score" in message:
+        player1_score = message.split(":").pop().replace("}", "")
+        player1_data['player1_scores'] = player1_score
+
+    elif "player2_score" in message:
+        player2_score = message.split(":").pop().replace("}", "")
+        player2_data['player2_scores'] = player2_score
+
+    else:
+        print("Reçu:", message)
+
+def map_display(num_targets):
     targets = []
-    NUM_TARGETS = 10
-    for _ in range(NUM_TARGETS):
+    for _ in range(num_targets):
         targets.append([random.randint(0, 7), random.randint(0, 7)])
-        targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(NUM_TARGETS)]
-        return f"[SERVER] Map ({NUM_TARGETS} dots) : {targets}"
+        targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
+        return f"[SERVER] Map ({num_targets} dots) : {targets}"
         
 def timer():
-    timer = 10
+    timer = 20
     for i in range(timer):
         timer -= 1
-        client.publish(TOPIC, f"[SERVER] Timer : {timer}s")
+        mqtt_client.publish(GAME_TOPIC, f"[SERVER] Timer : {timer}s")
         time.sleep(1)
-    client.publish(TOPIC, f"[SERVER] Timer : Game Over!")
-# mqtt_client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
-# mqtt_client.on_connect = connexion
-# mqtt_client.on_message = reception_msg
-# mqtt_client.on_publish = publication
-# mqtt_client.connect(BROKER, PORT)
+    mqtt_client.publish(GAME_TOPIC, f"[SERVER] Timer : Game Over!")
+    # time.sleep(3)
+    # clearMatrix()
+    # game_state = Connected
+
+mqtt_client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
+mqtt_client.on_connect = connexion
+mqtt_client.on_message = reception_msg
+mqtt_client.connect(Broker, PORT)
  
-# threading.Thread(target=mqtt_client.loop_forever, daemon=True).start()
+threading.Thread(target=mqtt_client.loop_forever, daemon=True).start()
 
 game_state = 'Connected'
 
@@ -123,7 +137,10 @@ def get_game_state():
     global score
     global game_state
     global buzzer_triggered
-    score = 0
+    global player2_score
+    mqtt_client.on_message = reception_msg
+    player1_score = player1_data['player1_scores']
+    player2_score = player2_data['player2_scores']
     # bleue = en_jeux, jaune = restarting, blanc = connected
     if game_state == "Connected":
         led_state(0,0,0)
@@ -137,7 +154,7 @@ def get_game_state():
     else:
         led_state(1,1,1)
         pi.write(BUZZER,0)
-    return jsonify({'game_state': game_state, 'score': score}),200
+    return jsonify({'game_state': game_state, 'player1_score': player1_score, 'player2_score': player2_score}),200
 
 @app.route('/api/set_game_state', methods=['POST'])
 def set_game_state():
@@ -146,7 +163,6 @@ def set_game_state():
     global dot_x
     global dot_y
     global score
-    targets = []
     col = 0x00
     row = 0
     if request.method == "POST":
@@ -162,8 +178,8 @@ def set_game_state():
                 elif json['difficulty'] == 'Hard':
                     NUM_TARGETS = 5
 
-                for _ in range(NUM_TARGETS):
-                    targets.append([random.randint(0, 7), random.randint(0, 7)])
+                mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
+                mqtt_client.publish(GAME_TOPIC, timer())
 
                 # Setup Matrix
                 with matrix as mem:
@@ -173,44 +189,7 @@ def set_game_state():
 
                 try:
                     while game_state == 'Game Started':
-                        # 1. Update Player Position
-                        dot_x = max(0.0, min(7.0, dot_x + calculate_step(x.value)))
-                        dot_y = max(0.0, min(7.0, dot_y + calculate_step(y.value)))
-                        px, py = int(round(dot_x)), int(round(dot_y))
-
-                        # 2. COLLISION DETECTION (Capture and Remove)
-                        # We loop through a copy of the list [:] so we don't crash while removing items
-                        for t in targets[:]: 
-                            if px == t[0] and py == t[1]:
-                                targets.remove(t) # Remove the dot from existence!
-                                score += 1
-                                # clien.publish("SCORE", "{score}")
-                                print(f"Captured! {len(targets)} dots remaining.") # send to pi B (ex.: "Player01 : Captured! {len(targets)} dots remaining.")
-
-                        # 3. WIN CONDITION
-                        if not targets:
-                            print("Level Cleared! Spawning new wave...") # send to pi B (ex.: "Player01 : Level Cleared! Spawning new wave...")
-                            time.sleep(1)
-                            # Re-spawn 10 new dots if you want the game to loop
-                            targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(NUM_TARGETS)]
-
-                        # 4. RENDER
-                        buffer = bytearray([0] * 17)
-                        buffer[0] = 0x00
-                        
-                        # Draw remaining targets
-                        for t in targets:
-                            row_idx = (t[1] * 2) + 1
-                            buffer[row_idx] |= (1 << t[0])
-                            
-                        # Draw player
-                        player_row_idx = (py * 2) + 1
-                        buffer[player_row_idx] |= (1 << px)
-
-                        with matrix as mem:
-                            mem.write(buffer)
-
-                        time.sleep(0.02)
+                        break
 
                 except:
                     clearMatrix()
@@ -231,78 +210,7 @@ def set_game_state():
       return jsonify({'Erreur': 'Requetes POST seulement'}),500
 
 
-    return jsonify({'game_state': game_state, 'led_sequence': targets}),200
-
-# @app.route('/api/set_matrix', methods=['POST'])
-# def set_matrix(): # only turns on 1 led in each column
-#     led_position = ''
-#     led_state = ''
-#     # sum = 0
-#     if request.method == "POST":
-#         json = request.get_json()
-#         if game_state == 'Connected':
-#             if 'led_position' in json and 'led_state' in json:
-#                 led_position = json['led_position'].split('x')
-#                 led_state = json['led_state']
-#                 values = converter(led_position[0], led_position[1])
-#                 if led_state == 'off':
-#                     # sum -= values[1]
-#                     matrix.write(bytes([values[0], 0]))
-#                 elif led_state == 'on':
-#                     matrix.write(bytes([values[0], values[1]]))
-#                     # sum += values[1]
-#                     # matrix.write(bytes([values[0], sum))
-#                 else:
-#                     return jsonify({'Erreur': 'Mauvaise valeur'}),500
-#             else:
-#                 return jsonify({'Erreur': 'Requete invalide'}),500
-#         else:
-#             return jsonify({'Erreur': 'Requete non autoriser, une partie est en jeux'}),500
-#     else:
-#         return jsonify({'Erreur': 'Requetes POST seulement'}),500
-
-#     return jsonify({'led_position': json['led_position'], 'led_state': json['led_state']}),200
-
-
-# def converter(col, row):
-#     col_byte, row_num = 0x00,0
-#     match col:
-#         case '0':
-#             col_byte = 0x00
-#         case '1':
-#             col_byte = 0x02
-#         case '2':
-#             col_byte = 0x04
-#         case '3':
-#             col_byte = 0x06
-#         case '4':
-#             col_byte = 0x08
-#         case '5':
-#             col_byte = 0x0A
-#         case '6':
-#             col_byte = 0x0C
-#         case '7':
-#             col_byte = 0x0E
-    
-#     match row:
-#         case '0':
-#             row_num = 1
-#         case '1':
-#             row_num = 2
-#         case '2':
-#             row_num = 4
-#         case '3':
-#             row_num = 8
-#         case '4':
-#             row_num = 16
-#         case '5':
-#             row_num = 32
-#         case '6':
-#             row_num = 64
-#         case '7':
-#             row_num = 128
-
-#     return [col_byte, row_num]
+    return jsonify({'game_state': game_state}),200
 
 if __name__ == '__main__':
-    app.run(host='192.168.17.1', port=5000) # host='192.168.17.1'
+    app.run(host='0.0.0.0', port=5000) # host='192.168.17.1'

@@ -2,30 +2,6 @@
 <html lang='en'>
 
 <style>
-    /* matrix.html */
-
-    #matrix-root {
-        display: none;
-    }
-
-    .matrix-grid {
-        display: grid;
-        grid-template-rows: auto auto auto auto auto auto auto auto;
-        grid-template-columns: min-content min-content min-content min-content min-content min-content min-content min-content;
-        border-radius: 8px;
-        justify-content: center;
-    }
-
-    .matrix-grid .row {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        margin: 10px 10px;
-        border: 3px solid black;
-        transition: 0.3s;
-        background-color: grey;
-    }
-
     /* index.html */
 
     body {
@@ -84,7 +60,8 @@
     <div class='root'>
         <div class='container'>
             <h1 class='title'>MEMORY TEST</h1>
-            <h2>Score : <input id='score' value='' readonly /></h2>
+            <h2>Player 1 Score: <input id='player1_score' value='' readonly /></h2>
+            <h2>Player 2 Score : <input id='player2_score' value='' readonly /></h2>
             <h2>Game State : <input id='game-state' value='Not Connected' readonly /></h2>
 
             <div id="content-box" class='content-box'>
@@ -99,99 +76,14 @@
                 <button id='resetBtn' onclick='setGameState("restart")'>Restart / Debug</button>
                 <button id='endBtn' onclick='setGameState("end")'>End the game</button>
             </div>
-
-            <div id='matrix-root'>
-                <h2>You can draw on the matrix just by clicking on the circles</h2>
-                <div class='matrix-grid'>
-                    <div class='col'>
-                        <div class='row' id='0x0'></div>
-                        <div class='row' id='0x1'></div>
-                        <div class='row' id='0x2'></div>
-                        <div class='row' id='0x3'></div>
-                        <div class='row' id='0x4'></div>
-                        <div class='row' id='0x5'></div>
-                        <div class='row' id='0x6'></div>
-                        <div class='row' id='0x7'></div>
-                    </div>
-                    <div class='col'>
-                        <div class='row' id='1x0'></div>
-                        <div class='row' id='1x1'></div>
-                        <div class='row' id='1x2'></div>
-                        <div class='row' id='1x3'></div>
-                        <div class='row' id='1x4'></div>
-                        <div class='row' id='1x5'></div>
-                        <div class='row' id='1x6'></div>
-                        <div class='row' id='1x7'></div>
-                    </div>
-                    <div class='col'>
-                        <div class='row' id='2x0'></div>
-                        <div class='row' id='2x1'></div>
-                        <div class='row' id='2x2'></div>
-                        <div class='row' id='2x3'></div>
-                        <div class='row' id='2x4'></div>
-                        <div class='row' id='2x5'></div>
-                        <div class='row' id='2x6'></div>
-                        <div class='row' id='2x7'></div>
-                    </div>
-                    <div class='col'>
-                        <div class='row' id='3x0'></div>
-                        <div class='row' id='3x1'></div>
-                        <div class='row' id='3x2'></div>
-                        <div class='row' id='3x3'></div>
-                        <div class='row' id='3x4'></div>
-                        <div class='row' id='3x5'></div>
-                        <div class='row' id='3x6'></div>
-                        <div class='row' id='3x7'></div>
-                    </div>
-                    <div class='col'>
-                        <div class='row' id='4x0'></div>
-                        <div class='row' id='4x1'></div>
-                        <div class='row' id='4x2'></div>
-                        <div class='row' id='4x3'></div>
-                        <div class='row' id='4x4'></div>
-                        <div class='row' id='4x5'></div>
-                        <div class='row' id='4x6'></div>
-                        <div class='row' id='4x7'></div>
-                    </div>
-                    <div class='col'>
-                        <div class='row' id='5x0'></div>
-                        <div class='row' id='5x1'></div>
-                        <div class='row' id='5x2'></div>
-                        <div class='row' id='5x3'></div>
-                        <div class='row' id='5x4'></div>
-                        <div class='row' id='5x5'></div>
-                        <div class='row' id='5x6'></div>
-                        <div class='row' id='5x7'></div>
-                    </div>
-                    <div class='col'>
-                        <div class='row' id='6x0'></div>
-                        <div class='row' id='6x1'></div>
-                        <div class='row' id='6x2'></div>
-                        <div class='row' id='6x3'></div>
-                        <div class='row' id='6x4'></div>
-                        <div class='row' id='6x5'></div>
-                        <div class='row' id='6x6'></div>
-                        <div class='row' id='6x7'></div>
-                    </div>
-                    <div class='col'>
-                        <div class='row' id='7x0'></div>
-                        <div class='row' id='7x1'></div>
-                        <div class='row' id='7x2'></div>
-                        <div class='row' id='7x3'></div>
-                        <div class='row' id='7x4'></div>
-                        <div class='row' id='7x5'></div>
-                        <div class='row' id='7x6'></div>
-                        <div class='row' id='7x7'></div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </body>
 
 <script>
     // fetch (score, round et game_state)
-    const score = document.getElementById('score');
+    const player1_score = document.getElementById('player1_score');
+    const player2_score = document.getElementById('player2_score');
     const game_state = document.getElementById('game-state');
 
     // setGameState
@@ -209,39 +101,23 @@
     });
     let difficulty = 'Easy';
 
-    // setMatrix (add event listerner to each 'button' of the 'matrix')
-    const cols = document.querySelectorAll('.col');
-    let led_position = '';
-    cols.forEach((col, columnIndex) => {
-        const rows = col.querySelectorAll('.row');
-        rows.forEach((row, rowIndex) => {
-            row.addEventListener('click', function () {
-                led_position = row.id;
-                setMatrix();
-            });
-        });
-    });
-
     // Manage game_state
     setInterval(() => {
         if (game_state.value == 'Connected') {
             document.getElementById('startBtn').style.display = 'block';
             document.getElementById('content-box').style.display = 'block';
-            document.getElementById('matrix-root').style.display = 'block';
             document.getElementById('resetBtn').style.display = 'none';
             document.getElementById('endBtn').style.display = 'none';
         }
         else if (game_state.value == 'Game Started') {
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('content-box').style.display = 'none';
-            document.getElementById('matrix-root').style.display = 'none';
             document.getElementById('resetBtn').style.display = 'block';
             document.getElementById('endBtn').style.display = 'block';
         }
         else {
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('content-box').style.display = 'none';
-            document.getElementById('matrix-root').style.display = 'none';
             document.getElementById('resetBtn').style.display = 'none';
             document.getElementById('endBtn').style.display = 'none';
         }
@@ -250,11 +126,12 @@
 
     
     const getValues = setInterval(() => {
-        fetch('http://192.168.17.1:5000/api/get_game_state')
+        fetch('http://127.0.0.1:5000/api/get_game_state')
             .then(res => res.json())
             .then(data => {
                 game_state.value = data['game_state'];
-                score.value = data['score'];
+                player1_score.value = data['player1_score'];
+                player2_score.value = data['player2_score'];
         })
             .catch(err => {
                 console.error('Erreur de synchronisation (get_game_state)');
@@ -266,7 +143,7 @@
 
     async function setGameState(state) {
         try {
-            const response = await fetch('http://192.168.17.1:5000/api/set_game_state', {
+            const response = await fetch('http://127.0.0.1:5000/api/set_game_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -281,39 +158,6 @@
                 game_state.value = 'Not Connected';
                 console.error('Erreur de synchronisation (set_game_state)')
             }
-        } catch (err) {
-            console.error(err);
-        }
-    }
-
-    async function setMatrix() {
-        var led_state = '';
-        const curLed = document.getElementById(`${led_position}`);
-        if (curLed.style.backgroundColor == 'red') {
-            led_state = 'off';
-        } else {
-            led_state = 'on';
-        }
-        try {
-            const res = await fetch('http://192.168.17.1:5000/api/set_matrix', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 'id': 'matrix_01', 'led_position': led_position, 'led_state': led_state})
-            });
-
-            var data = await res.json();
-            if (!data.ok) {
-                if (data.led_state == 'on') {
-                    document.getElementById(`${data.led_position}`).style.backgroundColor = 'red';
-                } else {
-                    document.getElementById(`${data.led_position}`).style.backgroundColor = 'grey';
-                }
-            } else {
-                console.error('Erreur de synchronisation (set_matrix)');
-            }
-
         } catch (err) {
             console.error(err);
         }
