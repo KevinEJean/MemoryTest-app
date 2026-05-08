@@ -60,6 +60,10 @@ DEAD_ZONE = 8000
 NUM_TARGETS = 10  # Set how many dots you want
 buzzer_triggered = False
 
+# list for the map
+global targets
+targets = []
+
 # Initial for the dot
 global dot_x
 dot_x = 0.0
@@ -102,11 +106,14 @@ def reception_msg(cl,userdata,msg):
         player2_score = message.split(":").pop().replace("}", "")
         player2_data['player2_scores'] = player2_score
 
+    # elif "Game Over" in message:
+    #     game_state = "Connected"
+
     else:
         print("Reçu:", message)
 
 def map_display(num_targets):
-    targets = []
+    global targets
     for _ in range(num_targets):
         targets.append([random.randint(0, 7), random.randint(0, 7)])
         targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
@@ -158,13 +165,13 @@ def get_game_state():
 
 @app.route('/api/set_game_state', methods=['POST'])
 def set_game_state():
-    global led_sequence
     global game_state
     global dot_x
     global dot_y
     global score
-    col = 0x00
-    row = 0
+    global targets
+    scores = 0
+    rounds = 0
     if request.method == "POST":
         json = request.get_json()
         if 'game_state' in json and 'difficulty' in json:
@@ -172,14 +179,13 @@ def set_game_state():
                 game_state = 'Game Started'
                 clearMatrix()
                 if json['difficulty'] == 'Easy':
-                    NUM_TARGETS = 10
+                    NUM_TARGETS = 5
                 elif json['difficulty'] == 'Normal':
                     NUM_TARGETS = 7
                 elif json['difficulty'] == 'Hard':
-                    NUM_TARGETS = 5
+                    NUM_TARGETS = 10
 
                 mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
-                mqtt_client.publish(GAME_TOPIC, timer())
 
                 # Setup Matrix
                 with matrix as mem:
@@ -187,13 +193,66 @@ def set_game_state():
                     mem.write(bytes([0x81])) 
                     mem.write(bytes([0xEF])) 
 
-                try:
-                    while game_state == 'Game Started':
-                        break
+                while game_state == 'Game Started':
+                    try:
+                        mqtt_client.connect(Broker, PORT)
+                        while True:
+                            # mqtt_client.publish(GAME_TOPIC, timer())
+                            # 1. Update Player Position
+                            dot_x = max(0.0, min(7.0, dot_x + calculate_step(x.value)))
+                            dot_y = max(0.0, min(7.0, dot_y + calculate_step(y.value)))
+                            px, py = int(round(dot_x)), int(round(dot_y))
 
-                except:
-                    clearMatrix()
-                    pass
+                            # 2. COLLISION DETECTION (Capture and Remove)
+                            # We loop through a copy of the list [:] so we don't crash while removing items
+                            for t in targets[:]: 
+                                if px == t[0] and py == t[1]:
+                                    targets.remove(t) # Remove the dot from existence!
+                                    print(f"Captured! {len(targets)} dots remaining.")
+                                    scores += len(targets)
+                                    print(f"Score: {scores}")
+
+                            # 3. WIN CONDITION
+                            if not targets:
+                                print("Level Cleared! Spawning new wave...")
+                                time.sleep(1)
+                                rounds += 1
+                                # Re-spawn 10 new dots if you want the game to loop
+                                # targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(10)]
+                                mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
+                                print(rounds)
+                                if rounds == 3:
+                                    print("Fin du programme")
+                                    player1_data["player1_scores"] = scores # pi@rasp11 would be player2_scores ?
+                                    json_payload = str(player1_data)
+                                    mqtt_client.publish(GAME_TOPIC, json_payload)
+                                    with matrix as mem:
+                                        mem.write(bytearray([0x00] * 17))
+                                    # stop timer
+                                    game_state = "Connected"
+                                    break
+
+                            # 4. RENDER
+                            buffer = bytearray([0] * 17)
+                            buffer[0] = 0x00
+                            
+                            # Draw remaining targets
+                            for t in targets:
+                                row_idx = (t[1] * 2) + 1
+                                buffer[row_idx] |= (1 << t[0])
+                                
+                            # Draw player
+                            player_row_idx = (py * 2) + 1
+                            buffer[player_row_idx] |= (1 << px)
+
+                            with matrix as mem:
+                                mem.write(buffer)
+
+                            time.sleep(0.02)
+
+                    except KeyboardInterrupt:
+                        clearMatrix()
+                        game_state = "Connected"
 
             elif json['game_state'] == 'restart':
                 game_state = 'Connected'
@@ -211,6 +270,7 @@ def set_game_state():
 
 
     return jsonify({'game_state': game_state}),200
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000) # host='192.168.17.1'
