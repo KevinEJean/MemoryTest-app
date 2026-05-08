@@ -2,9 +2,9 @@ import paho.mqtt.client as pmc
 import random
 import time
 
-BROKER = "10.10.21.144"
+BROKER = "10.10.21.149"
 PORT = 1883
-TOPIC = "meteo"
+TOPIC = "map"
 
 
 def connexion(client, userdata, flags, code, properties):

@@ -20,23 +20,22 @@ R,G,B = 21,20,16
 BUZZER = 19
 ads = ADS1115(i2c)
 BTN = 19
+
 # Flask
 app = Flask(__name__)
 CORS(app)
 
 # MQQT Variables
-
 # Broker = 10.10.41.134
 # GAME_TOPIC = "map"
 # PORT = 1883
 
 # Donne des joueurs
-
 player1_data = {
-    "score" : None
+    "player1_scores" : None
 }
 player2_data = {
-    "score" : None
+    "player2_scores" : None
 }
 
 # Initialisation de la matrix 8x8
@@ -85,15 +84,30 @@ def calculate_step(raw_value):
     if abs(diff) < DEAD_ZONE: return 0
     return (diff / 16000) * MOVE_SPEED
     
-# def connexion(client, userdata, flags, code, properties):
-#     if code == 0:
-#         print("Connecté")
-#     else:
-#         print("Erreur code %d\n", code)
+def connexion(client, userdata, flags, code, properties):
+    if code == 0:
+        print("Connecté")
+    else:
+        print("Erreur code %d\n", code)
 
-# def reception_msg(cl,userdata,msg):
-#     print("Reçu:",msg.payload.decode())
+def reception_msg(cl,userdata,msg):
+    print("Reçu:",msg.payload.decode())
 
+def map_display():
+    targets = []
+    NUM_TARGETS = 10
+    for _ in range(NUM_TARGETS):
+        targets.append([random.randint(0, 7), random.randint(0, 7)])
+        targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(NUM_TARGETS)]
+        return f"[SERVER] Map ({NUM_TARGETS} dots) : {targets}"
+        
+def timer():
+    timer = 10
+    for i in range(timer):
+        timer -= 1
+        client.publish(TOPIC, f"[SERVER] Timer : {timer}s")
+        time.sleep(1)
+    client.publish(TOPIC, f"[SERVER] Timer : Game Over!")
 # mqtt_client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
 # mqtt_client.on_connect = connexion
 # mqtt_client.on_message = reception_msg
