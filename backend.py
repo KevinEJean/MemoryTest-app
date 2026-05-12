@@ -33,11 +33,11 @@ PORT = 1883
 # Donne des joueurs
 player1_data = {
     "player1_scores" : None,
-    "isReady" : False
+    # "isReady" : False
 }
 player2_data = {
     "player2_scores" : None,
-    "isReady" : False
+    # "isReady" : False
 }
 
 # Initialisation de la matrix 8x8
@@ -111,14 +111,14 @@ def reception_msg(cl,userdata,msg):
         player2_score = message.split(":").pop().replace("}", "")
         player2_data['player2_scores'] = player2_score
 
-    elif "player1 is ready" in message:
-        player1_data['isReady'] = True
+    # elif "player1 is ready" in message:
+    #     player1_data['isReady'] = True
 
-    elif "player2 is ready" in message:
-        player2_data['isReady'] = True
+    # elif "player2 is ready" in message:
+    #     player2_data['isReady'] = True
 
-    if player1_data['isReady'] and player2_data['isReady']:
-        game_state = 'Game Started'
+    # if player1_data['isReady'] and player2_data['isReady']:
+    #     game_state = 'Game Started'
 
     # elif "Game Over" in message:
     #     game_state = "Connected"
@@ -177,7 +177,8 @@ def get_game_state():
     else:
         led_state(1,1,1)
         pi.write(BUZZER,0)
-    return jsonify({'game_state': game_state, 'player1_score': player1_score, 'player2_score': player2_score, 'timer': game_timer}),200
+    # return jsonify({'game_state': game_state, 'player1_score': player1_score, 'player2_score': player2_score, 'timer': game_timer}),200
+    return jsonify({'game_state': game_state, 'player1_score': player1_score, 'player2_score': player2_score}),200
 
 @app.route('/api/set_game_state', methods=['POST'])
 def set_game_state():
@@ -191,7 +192,8 @@ def set_game_state():
     if request.method == "POST":
         json = request.get_json()
         if 'game_state' in json and 'difficulty' in json:
-            if json['game_state'] == 'start' and player1_data['isReady'] == True and player2_data['isReady'] == True:
+            # if json['game_state'] == 'start' and player1_data['isReady'] == True and player2_data['isReady'] == True:
+            if json['game_state'] == 'start':
                 game_state = 'Game Started'
                 clearMatrix()
                 if json['difficulty'] == 'Easy':
@@ -210,7 +212,7 @@ def set_game_state():
                     mem.write(bytes([0xEF])) 
 
                 while game_state == 'Game Started':
-                    timer_thread = threading.Thread(target=timer, daemon=True).start()
+                    # timer_thread = threading.Thread(target=timer, daemon=True).start()
                     try:
                         mqtt_client.connect(Broker, PORT)
                         while game_state == 'Game Started':
@@ -268,23 +270,23 @@ def set_game_state():
                             time.sleep(0.02)
 
                     except KeyboardInterrupt:
-                        timer_thread.join()
+                        # timer_thread.join()
                         clearMatrix()
                         game_state = "Connected"
 
-            elif json['game_state'] == 'player1_ready':
-                mqtt_client.publish(GAME_TOPIC, "player1 is ready")
+            # elif json['game_state'] == 'player1_ready':
+            #     mqtt_client.publish(GAME_TOPIC, "player1 is ready")
             
-            elif json['game_state'] == 'player2_ready':
-                mqtt_client.publish(GAME_TOPIC, "player2 is ready")
+            # elif json['game_state'] == 'player2_ready':
+            #     mqtt_client.publish(GAME_TOPIC, "player2 is ready")
 
             elif json['game_state'] == 'restart':
-                timer_thread.join()
+                # timer_thread.join()
                 game_state = 'Connected'
                 clearMatrix()
 
             elif json['game_state'] == 'end':
-                timer_thread.join()
+                # timer_thread.join()
                 game_state = 'Connected'
                 clearMatrix()
 
@@ -295,7 +297,7 @@ def set_game_state():
     else:
       return jsonify({'Erreur': 'Requetes POST seulement'}),500
 
-    print(player1_data['isReady'], player2_data['isReady'])
+    # print(player1_data['isReady'], player2_data['isReady'])
     return jsonify({'game_state': game_state}),200
 
 

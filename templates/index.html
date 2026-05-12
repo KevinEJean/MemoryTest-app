@@ -63,7 +63,7 @@
             <h2>Player 1 Score: <input id='player1_score' value='' readonly /></h2>
             <h2>Player 2 Score : <input id='player2_score' value='' readonly /></h2>
             <h2>Game State : <input id='game-state' value='Not Connected' readonly /></h2>
-            <h1>Timer: <input id='timer' type="number" value='' readonly /></h1>
+            <h1>Timer: <input id='timer' type="number" value='15' readonly /></h1>
 
             <div id="content-box" class='content-box'>
                 <h1>Pick a difficulty (Then click the 'Start the game' button) :</h1>
@@ -74,8 +74,8 @@
 
             <div class='buttons'>
                 <button id='startBtn' onclick='setGameState("start")'>Start the game</button>
-                <button id='startBtn1' onclick='setGameState("player1_ready")'>Player 1 Ready Up</button>
-                <button id='startBtn2' onclick='setGameState("player2_ready")'>Player 2 Ready Up</button>
+                <!-- <button id='startBtn1' onclick='setGameState("player1_ready")'>Player 1 Ready Up</button> -->
+                <!-- <button id='startBtn2' onclick='setGameState("player2_ready")'>Player 2 Ready Up</button> -->
                 <button id='resetBtn' onclick='setGameState("restart")'>Restart / Debug</button>
                 <button id='endBtn' onclick='setGameState("end")'>End the game</button>
             </div>
@@ -118,6 +118,12 @@
             document.getElementById('content-box').style.display = 'none';
             document.getElementById('resetBtn').style.display = 'block';
             document.getElementById('endBtn').style.display = 'block';
+            timer.value -= 1
+            console.log(timer.value)
+            if (timer.value <= 0) {
+                setGameState("end");
+                timer.value = 15
+            } 
         }
         else {
             document.getElementById('startBtn').style.display = 'none';
@@ -126,17 +132,15 @@
             document.getElementById('endBtn').style.display = 'none';
         }
     }, 1000);
-
-
     
     const getValues = setInterval(() => {
-        fetch('http://127.0.0.1:5000/api/get_game_state')
+        fetch('http://10.10.21.144:5000/api/get_game_state')
             .then(res => res.json())
             .then(data => {
                 game_state.value = data['game_state'];
                 player1_score.value = data['player1_score'];
                 player2_score.value = data['player2_score'];
-                timer.value = data['timer'];
+                // timer.value = data['timer'];
         })
             .catch(err => {
                 console.error('Erreur de synchronisation (get_game_state)');
@@ -148,7 +152,25 @@
 
     async function setGameState(state) {
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/set_game_state', {
+            const response = await fetch('http://10.10.21.144:5000/api/set_game_state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 'game_state': state, 'difficulty': difficulty })
+            });
+            const data = await response.json();
+            if (!data.ok) {
+                game_state.value = data['game_state'];
+            } else {
+                game_state.value = 'Not Connected';
+                console.error('Erreur de synchronisation (set_game_state)')
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        try {
+            const response = await fetch('http://10.10.21.149:5000/api/set_game_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -166,6 +188,7 @@
             console.error(err);
         }
     }
+
 </script>
 
 </html>
