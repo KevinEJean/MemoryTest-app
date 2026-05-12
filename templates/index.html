@@ -63,6 +63,7 @@
             <h2>Player 1 Score: <input id='player1_score' value='' readonly /></h2>
             <h2>Player 2 Score : <input id='player2_score' value='' readonly /></h2>
             <h2>Game State : <input id='game-state' value='Not Connected' readonly /></h2>
+            <h1>Timer: <input id='timer' type="number" value='' readonly /></h1>
 
             <div id="content-box" class='content-box'>
                 <h1>Pick a difficulty (Then click the 'Start the game' button) :</h1>
@@ -85,6 +86,7 @@
     const player1_score = document.getElementById('player1_score');
     const player2_score = document.getElementById('player2_score');
     const game_state = document.getElementById('game-state');
+    const timer = document.getElementById('timer');
 
     // setGameState
     const difficulty1 = document.getElementById('difficulty1');
@@ -132,6 +134,7 @@
                 game_state.value = data['game_state'];
                 player1_score.value = data['player1_score'];
                 player2_score.value = data['player2_score'];
+                timer.value = data['timer'];
         })
             .catch(err => {
                 console.error('Erreur de synchronisation (get_game_state)');

@@ -52,6 +52,9 @@ pi.set_mode(BTN, pigpio.INPUT)
 x = AnalogIn(ads, 0)
 y = AnalogIn(ads, 1)
 
+global game_timer
+game_timer = 15
+
 # --- CONFIGURATION ---
 global NUM_TARGETS
 MOVE_SPEED = 0.4
@@ -120,15 +123,17 @@ def map_display(num_targets):
         return f"[SERVER] Map ({num_targets} dots) : {targets}"
         
 def timer():
-    timer = 20
-    for i in range(timer):
-        timer -= 1
-        mqtt_client.publish(GAME_TOPIC, f"[SERVER] Timer : {timer}s")
+    global game_state
+    global game_timer
+    game_timer = 15
+    for i in range(game_timer):
+        game_timer -= 1
+        mqtt_client.publish(GAME_TOPIC, f"[SERVER] Timer : {game_timer}s")
         time.sleep(1)
+    game_state = "Connected"
+    clearMatrix()
     mqtt_client.publish(GAME_TOPIC, f"[SERVER] Timer : Game Over!")
-    # time.sleep(3)
-    # clearMatrix()
-    # game_state = Connected
+timer_thread = threading.Thread(target=timer, daemon=True)
 
 mqtt_client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
 mqtt_client.on_connect = connexion
@@ -145,6 +150,7 @@ def get_game_state():
     global game_state
     global buzzer_triggered
     global player2_score
+    global game_timer
     mqtt_client.on_message = reception_msg
     player1_score = player1_data['player1_scores']
     player2_score = player2_data['player2_scores']
@@ -161,7 +167,7 @@ def get_game_state():
     else:
         led_state(1,1,1)
         pi.write(BUZZER,0)
-    return jsonify({'game_state': game_state, 'player1_score': player1_score, 'player2_score': player2_score}),200
+    return jsonify({'game_state': game_state, 'player1_score': player1_score, 'player2_score': player2_score, 'timer': game_timer}),200
 
 @app.route('/api/set_game_state', methods=['POST'])
 def set_game_state():
@@ -194,9 +200,12 @@ def set_game_state():
                     mem.write(bytes([0xEF])) 
 
                 while game_state == 'Game Started':
+                    for thread in threading:
+                        if not thread.is_alive():
+                            timer_thread.start()
                     try:
                         mqtt_client.connect(Broker, PORT)
-                        while True:
+                        while game_state == 'Game Started':
                             # mqtt_client.publish(GAME_TOPIC, timer())
                             # 1. Update Player Position
                             dot_x = max(0.0, min(7.0, dot_x + calculate_step(x.value)))
@@ -220,7 +229,7 @@ def set_game_state():
                                 # Re-spawn 10 new dots if you want the game to loop
                                 # targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(10)]
                                 mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
-                                print(rounds)
+                                print(f"Rounds : {rounds}")
                                 if rounds == 3:
                                     print("Fin du programme")
                                     player1_data["player1_scores"] = scores # pi@rasp11 would be player2_scores ?
@@ -251,16 +260,20 @@ def set_game_state():
                             time.sleep(0.02)
 
                     except KeyboardInterrupt:
+                        timer_thread.join()
                         clearMatrix()
                         game_state = "Connected"
 
             elif json['game_state'] == 'restart':
+                timer_thread.join()
                 game_state = 'Connected'
                 clearMatrix()
 
             elif json['game_state'] == 'end':
+                timer_thread.join()
                 game_state = 'Connected'
                 clearMatrix()
+
             else:
                 return jsonify({'Erreur': 'Mauvaise valeur'}),500
         else:
