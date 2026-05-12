@@ -74,6 +74,8 @@
 
             <div class='buttons'>
                 <button id='startBtn' onclick='setGameState("start")'>Start the game</button>
+                <button id='startBtn1' onclick='setGameState("player1_ready")'>Player 1 Ready Up</button>
+                <button id='startBtn2' onclick='setGameState("player2_ready")'>Player 2 Ready Up</button>
                 <button id='resetBtn' onclick='setGameState("restart")'>Restart / Debug</button>
                 <button id='endBtn' onclick='setGameState("end")'>End the game</button>
             </div>
@@ -156,7 +158,6 @@
             const data = await response.json();
             if (!data.ok) {
                 game_state.value = data['game_state'];
-                console.log(data['led_sequence']);
             } else {
                 game_state.value = 'Not Connected';
                 console.error('Erreur de synchronisation (set_game_state)')

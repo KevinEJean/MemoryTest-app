@@ -191,10 +191,8 @@ def set_game_state():
     if request.method == "POST":
         json = request.get_json()
         if 'game_state' in json and 'difficulty' in json:
-            if json['game_state'] == 'start':
-                # game_state = 'Game Started'
-                mqtt_client.publish(GAME_TOPIC, "player1 is ready")
-                mqtt_client.publish(GAME_TOPIC, "player2 is ready")
+            if json['game_state'] == 'start' and player1_data['isReady'] == True and player2_data['isReady'] == True:
+                game_state = 'Game Started'
                 clearMatrix()
                 if json['difficulty'] == 'Easy':
                     NUM_TARGETS = 5
@@ -274,6 +272,12 @@ def set_game_state():
                         clearMatrix()
                         game_state = "Connected"
 
+            elif json['game_state'] == 'player1_ready':
+                mqtt_client.publish(GAME_TOPIC, "player1 is ready")
+            
+            elif json['game_state'] == 'player2_ready':
+                mqtt_client.publish(GAME_TOPIC, "player2 is ready")
+
             elif json['game_state'] == 'restart':
                 timer_thread.join()
                 game_state = 'Connected'
@@ -291,7 +295,7 @@ def set_game_state():
     else:
       return jsonify({'Erreur': 'Requetes POST seulement'}),500
 
-
+    print(player1_data['isReady'], player2_data['isReady'])
     return jsonify({'game_state': game_state}),200
 
 
