@@ -32,10 +32,12 @@ PORT = 1883
 
 # Donne des joueurs
 player1_data = {
-    "player1_scores" : None
+    "player1_scores" : None,
+    "isReady" : False
 }
 player2_data = {
-    "player2_scores" : None
+    "player2_scores" : None,
+    "isReady" : False
 }
 
 # Initialisation de la matrix 8x8
@@ -109,6 +111,15 @@ def reception_msg(cl,userdata,msg):
         player2_score = message.split(":").pop().replace("}", "")
         player2_data['player2_scores'] = player2_score
 
+    elif "player1 is ready" in message:
+        player1_data['isReady'] = True
+
+    elif "player2 is ready" in message:
+        player2_data['isReady'] = True
+
+    if player1_data['isReady'] and player2_data['isReady']:
+        game_state = 'Game Started'
+
     # elif "Game Over" in message:
     #     game_state = "Connected"
 
@@ -133,7 +144,6 @@ def timer():
     game_state = "Connected"
     clearMatrix()
     mqtt_client.publish(GAME_TOPIC, f"[SERVER] Timer : Game Over!")
-timer_thread = threading.Thread(target=timer, daemon=True)
 
 mqtt_client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
 mqtt_client.on_connect = connexion
@@ -182,7 +192,9 @@ def set_game_state():
         json = request.get_json()
         if 'game_state' in json and 'difficulty' in json:
             if json['game_state'] == 'start':
-                game_state = 'Game Started'
+                # game_state = 'Game Started'
+                mqtt_client.publish(GAME_TOPIC, "player1 is ready")
+                mqtt_client.publish(GAME_TOPIC, "player2 is ready")
                 clearMatrix()
                 if json['difficulty'] == 'Easy':
                     NUM_TARGETS = 5
@@ -200,9 +212,7 @@ def set_game_state():
                     mem.write(bytes([0xEF])) 
 
                 while game_state == 'Game Started':
-                    for thread in threading:
-                        if not thread.is_alive():
-                            timer_thread.start()
+                    timer_thread = threading.Thread(target=timer, daemon=True).start()
                     try:
                         mqtt_client.connect(Broker, PORT)
                         while game_state == 'Game Started':
