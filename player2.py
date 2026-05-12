@@ -77,30 +77,41 @@ def reception_msg(cl,userdata,msg):
     global targets_list
     global targets_list2
     global targets_list3
+
+    payload = msg.payload.decode()
+    # Avoid processing empty or non-JSON signals
+    if not payload or payload == "state_check":
+        return
+
     data = json.loads(msg.payload.decode())
+
+    # Check if game ended
+    if data.get("type") == "GAME_STATE":
+        if data["game_state"] == "end":
+            clearMatrix()
         
     # Check if the message contains the map
-    for i in range(3):
-        if data.get("type") == "MAP_DATA":
+    if data.get("type") == "MAP_DATA":
+        for i in range(3):
             if i == 0:
                 targets_list = data["targets"]
             elif i == 1:
-                targets_list2 = data["targets"]
+                targets_list2 = data["targets1"]
             elif i == 2:
-                targets_list3 = data["targets"]
-            
-            isMapLoaded = True
-            print(f"Map Loaded: {targets_list}")
+                targets_list3 = data["targets2"]
+        isMapLoaded = True
+        print(f"Map Loaded: {targets_list, targets_list2, targets_list3}")
 
     print("Reçu:",msg.payload.decode())
 
 def publication(client, userdata, mid, code, properties):
     print("Envoi confirmé message #" + str(scores))
+
 def clearMatrix():
     with matrix_device as mem:
         mem.write(bytearray([0x00] * 17))
-    
     time.sleep(0.5)
+
 # Connexion MQQT
 client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
 client.on_connect = connexion
@@ -143,7 +154,7 @@ try:
                 elif rounds == 3:
                     targets_list = targets_list3
 
-                if rounds > 3:
+                elif rounds > 3:
                     print("Fin du programme")
                     player2_data["player2_scores"] = scores
                     json_payload = json.dumps(player2_data)

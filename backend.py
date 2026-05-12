@@ -11,7 +11,7 @@ from adafruit_ads1x15.ads1115 import ADS1115
 from adafruit_ads1x15.analog_in import AnalogIn
 import random
 import paho.mqtt.client as pmc
-import json
+import json as json_player
 # VARIABLE PIGPIO
 pi = pigpio.pi()
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -111,6 +111,7 @@ def reception_msg(cl,userdata,msg):
         player2_score = message.split(":").pop().replace("}", "")
         player2_data['player2_scores'] = player2_score
         print(player2_score)
+        
 
     # elif "player1 is ready" in message:
     #     player1_data['isReady'] = True
@@ -132,12 +133,16 @@ def map_display(num_targets):
     for _ in range(num_targets):
         targets.append([random.randint(0, 7), random.randint(0, 7)])
         targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
+        targets1 = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
+        targets2 = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
         # return f"[SERVER] Map ({num_targets} dots) : {targets}"
         payload = {
-        "type": "MAP_DATA",
-        "targets": targets
+            "type": "MAP_DATA",
+            "targets": targets,
+            "targets1": targets1,
+            "targets2": targets2,
         }
-        return json.dumps(payload)
+        return json_player.dumps(payload)
         
 def timer():
     global game_state
@@ -275,11 +280,21 @@ def set_game_state():
 
             elif json['game_state'] == 'restart':
                 # timer_thread.join()
+                end_payload = {
+                    "type" : "GAME_STATE",
+                    "game_state" : "end"
+                }
+                json_player.dumps(end_payload)
                 game_state = 'Connected'
                 clearMatrix()
 
             elif json['game_state'] == 'end':
                 # timer_thread.join()
+                end_payload = {
+                    "type" : "GAME_STATE",
+                    "game_state" : "end"
+                }
+                json_player.dumps(end_payload)
                 game_state = 'Connected'
                 clearMatrix()
 

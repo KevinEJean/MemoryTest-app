@@ -152,7 +152,7 @@
 
     async function setGameState(state) {
         try {
-            const [response] = await fetch('http://10.10.21.144:5000/api/set_game_state', {
+            const response = await fetch('http://10.10.21.144:5000/api/set_game_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -170,11 +170,11 @@
                 
             // ])
             const data = await response.json();
-            const data2 = await response2.json();
+            // const data2 = await response2.json();
             
             if (!data.ok) {
                 game_state.value = data['game_state'];
-                game_state.value = data2['game_state'];
+                // game_state.value = data2['game_state'];
             } else {
                 game_state.value = 'Not Connected';
                 console.error('Erreur de synchronisation (set_game_state)');
