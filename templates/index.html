@@ -152,37 +152,32 @@
 
     async function setGameState(state) {
         try {
-            const response = await fetch('http://10.10.21.144:5000/api/set_game_state', {
+            const [response] = await fetch('http://10.10.21.144:5000/api/set_game_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ 'game_state': state, 'difficulty': difficulty })
             });
+            // const [response, response2] = await Promise.all([
+            //     fetch('http://10.10.21.144:5000/api/set_game_state'), {
+            //         method: 'POST',
+            //         headers: {
+            //             'Content-Type': 'application/json'
+            //         },
+            //         body: JSON.stringify({ 'game_state': state, 'difficulty': difficulty })
+            //     }
+                
+            // ])
             const data = await response.json();
+            const data2 = await response2.json();
+            
             if (!data.ok) {
                 game_state.value = data['game_state'];
+                game_state.value = data2['game_state'];
             } else {
                 game_state.value = 'Not Connected';
-                console.error('Erreur de synchronisation (set_game_state)')
-            }
-        } catch (err) {
-            console.error(err);
-        }
-        try {
-            const response = await fetch('http://10.10.21.149:5000/api/set_game_state', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 'game_state': state, 'difficulty': difficulty })
-            });
-            const data = await response.json();
-            if (!data.ok) {
-                game_state.value = data['game_state'];
-            } else {
-                game_state.value = 'Not Connected';
-                console.error('Erreur de synchronisation (set_game_state)')
+                console.error('Erreur de synchronisation (set_game_state)');
             }
         } catch (err) {
             console.error(err);

@@ -11,7 +11,7 @@ from adafruit_ads1x15.ads1115 import ADS1115
 from adafruit_ads1x15.analog_in import AnalogIn
 import random
 import paho.mqtt.client as pmc
-
+import json
 # VARIABLE PIGPIO
 pi = pigpio.pi()
 i2c = busio.I2C(board.SCL, board.SDA)
@@ -110,6 +110,7 @@ def reception_msg(cl,userdata,msg):
     elif "player2_score" in message:
         player2_score = message.split(":").pop().replace("}", "")
         player2_data['player2_scores'] = player2_score
+        print(player2_score)
 
     # elif "player1 is ready" in message:
     #     player1_data['isReady'] = True
@@ -131,7 +132,12 @@ def map_display(num_targets):
     for _ in range(num_targets):
         targets.append([random.randint(0, 7), random.randint(0, 7)])
         targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
-        return f"[SERVER] Map ({num_targets} dots) : {targets}"
+        # return f"[SERVER] Map ({num_targets} dots) : {targets}"
+        payload = {
+        "type": "MAP_DATA",
+        "targets": targets
+        }
+        return json.dumps(payload)
         
 def timer():
     global game_state
@@ -216,21 +222,7 @@ def set_game_state():
                     try:
                         mqtt_client.connect(Broker, PORT)
                         while game_state == 'Game Started':
-                            # mqtt_client.publish(GAME_TOPIC, timer())
-                            # 1. Update Player Position
-                            dot_x = max(0.0, min(7.0, dot_x + calculate_step(x.value)))
-                            dot_y = max(0.0, min(7.0, dot_y + calculate_step(y.value)))
-                            px, py = int(round(dot_x)), int(round(dot_y))
-
-                            # 2. COLLISION DETECTION (Capture and Remove)
-                            # We loop through a copy of the list [:] so we don't crash while removing items
-                            for t in targets[:]: 
-                                if px == t[0] and py == t[1]:
-                                    targets.remove(t) # Remove the dot from existence!
-                                    print(f"Captured! {len(targets)} dots remaining.")
-                                    scores += len(targets)
-                                    print(f"Score: {scores}")
-
+                            
                             # 3. WIN CONDITION
                             if not targets:
                                 print("Level Cleared! Spawning new wave...")
@@ -239,6 +231,7 @@ def set_game_state():
                                 # Re-spawn 10 new dots if you want the game to loop
                                 # targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(10)]
                                 mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
+
                                 print(f"Rounds : {rounds}")
                                 if rounds == 3:
                                     print("Fin du programme")
@@ -251,21 +244,21 @@ def set_game_state():
                                     game_state = "Connected"
                                     break
 
-                            # 4. RENDER
-                            buffer = bytearray([0] * 17)
-                            buffer[0] = 0x00
+                            # # 4. RENDER
+                            # buffer = bytearray([0] * 17)
+                            # buffer[0] = 0x00
                             
-                            # Draw remaining targets
-                            for t in targets:
-                                row_idx = (t[1] * 2) + 1
-                                buffer[row_idx] |= (1 << t[0])
+                            # # Draw remaining targets
+                            # for t in targets:
+                            #     row_idx = (t[1] * 2) + 1
+                            #     buffer[row_idx] |= (1 << t[0])
                                 
-                            # Draw player
-                            player_row_idx = (py * 2) + 1
-                            buffer[player_row_idx] |= (1 << px)
+                            # # Draw player
+                            # player_row_idx = (py * 2) + 1
+                            # buffer[player_row_idx] |= (1 << px)
 
-                            with matrix as mem:
-                                mem.write(buffer)
+                            # with matrix as mem:
+                            #     mem.write(buffer)
 
                             time.sleep(0.02)
 
