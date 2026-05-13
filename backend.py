@@ -130,19 +130,17 @@ def reception_msg(cl,userdata,msg):
 
 def map_display(num_targets):
     global targets
-    for _ in range(num_targets):
-        targets.append([random.randint(0, 7), random.randint(0, 7)])
-        targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
-        targets1 = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
-        targets2 = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
-        # return f"[SERVER] Map ({num_targets} dots) : {targets}"
-        payload = {
-            "type": "MAP_DATA",
-            "targets": targets,
-            "targets1": targets1,
-            "targets2": targets2,
-        }
-        return json_player.dumps(payload)
+    targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
+    targets1 = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
+    targets2 = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(num_targets)]
+
+    payload = {
+        "type": "MAP_DATA",
+        "targets": targets,
+        "targets1": targets1,
+        "targets2": targets2,
+    }
+    return json_player.dumps(payload)
         
 def timer():
     global game_state
@@ -222,14 +220,12 @@ def set_game_state():
                     mem.write(bytes([0x81])) 
                     mem.write(bytes([0xEF])) 
 
-                while game_state == 'Game Started':
+ 
                     # timer_thread = threading.Thread(target=timer, daemon=True).start()
                     try:
-                        mqtt_client.connect(Broker, PORT)
-                        while game_state == 'Game Started':
-                            
+                        mqtt_client.connect(Broker, PORT)             
                             # 3. WIN CONDITION
-                            if not targets:
+                        if not targets:
                                 print("Level Cleared! Spawning new wave...")
                                 time.sleep(1)
                                 rounds += 1
@@ -247,7 +243,7 @@ def set_game_state():
                                         mem.write(bytearray([0x00] * 17))
                                     # stop timer
                                     game_state = "Connected"
-                                    break
+                              
 
                             # # 4. RENDER
                             # buffer = bytearray([0] * 17)
@@ -265,7 +261,7 @@ def set_game_state():
                             # with matrix as mem:
                             #     mem.write(buffer)
 
-                            time.sleep(0.02)
+                        time.sleep(0.02)
 
                     except KeyboardInterrupt:
                         # timer_thread.join()
@@ -278,17 +274,7 @@ def set_game_state():
             # elif json['game_state'] == 'player2_ready':
             #     mqtt_client.publish(GAME_TOPIC, "player2 is ready")
 
-            elif json['game_state'] == 'restart':
-                # timer_thread.join()
-                end_payload = {
-                    "type" : "GAME_STATE",
-                    "game_state" : "end"
-                }
-                json_player.dumps(end_payload)
-                game_state = 'Connected'
-                clearMatrix()
-
-            elif json['game_state'] == 'end':
+            elif json['game_state'] == 'restart' or json['game_state'] == 'end':
                 # timer_thread.join()
                 end_payload = {
                     "type" : "GAME_STATE",

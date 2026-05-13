@@ -133,7 +133,7 @@
         }
     }, 1000);
     
-    const getValues = setInterval(() => {
+    setInterval(() => {
         fetch('http://10.10.21.144:5000/api/get_game_state')
             .then(res => res.json())
             .then(data => {
@@ -159,18 +159,9 @@
                 },
                 body: JSON.stringify({ 'game_state': state, 'difficulty': difficulty })
             });
-            // const [response, response2] = await Promise.all([
-            //     fetch('http://10.10.21.144:5000/api/set_game_state'), {
-            //         method: 'POST',
-            //         headers: {
-            //             'Content-Type': 'application/json'
-            //         },
-            //         body: JSON.stringify({ 'game_state': state, 'difficulty': difficulty })
-            //     }
-                
-            // ])
+   
             const data = await response.json();
-            // const data2 = await response2.json();
+    
             
             if (!data.ok) {
                 game_state.value = data['game_state'];
