@@ -63,7 +63,7 @@
             <h2>Player 1 Score: <input id='player1_score' value='' readonly /></h2>
             <h2>Player 2 Score : <input id='player2_score' value='' readonly /></h2>
             <h2>Game State : <input id='game-state' value='Not Connected' readonly /></h2>
-            <h1>Timer: <input id='timer' type="number" value='15' readonly /></h1>
+            <h1>Timer: <input id='timer' type="number" value='12' readonly /></h1>
 
             <div id="content-box" class='content-box'>
                 <h1>Pick a difficulty (Then click the 'Start the game' button) :</h1>
@@ -122,7 +122,7 @@
             console.log(timer.value)
             if (timer.value <= 0) {
                 setGameState("end");
-                timer.value = 15
+                timer.value = 12
             } 
         }
         else {
