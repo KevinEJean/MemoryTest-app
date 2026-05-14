@@ -22,6 +22,7 @@ GAME_TOPIC = "map"
 global targets
 targets = 0
 game_running = False
+
 # Data a envoyer par MQQT
 player1_data = {
     "player1_scores" : None
@@ -65,33 +66,46 @@ def reception_msg(cl,userdata,msg):
     global targets_list3
     global game_running
     global rounds
-    data = json.loads(msg.payload.decode())
-    
-    # Check if the message contains the map
-    if data.get("type") == "MAP_DATA":
-            game_running = True
-            rounds = 0
-            targets_list = data.get("targets", [])
-        
-            targets_list2 = data.get("targets1", [])
-      
-            targets_list3 = data.get("targets2",[])
+    try:
+        data = json.loads(msg.payload.decode())
+
+        # Check if the message contains the map
+        if data.get("type") == "MAP_DATA":
+                game_running = True
+                rounds = 0
+                targets_list = data.get("targets", [])
             
-      
-            print(f"Map Loaded: {targets_list}")
-    elif data.get("type") == "GAME_STATE" and data.get("game_state") == "end":
+                targets_list2 = data.get("targets1", [])
+            
+                targets_list3 = data.get("targets2",[])
+                
+            
+                print(f"Map Loaded: {targets_list}")
+
+        # elif data.get("type") == "GAME_STATE" and data.get("game_state") == "end":
+        #     game_running = False
+        #     targets = []
+        #     print("Timer hit zero! Game stopped.")
+        #     clearMatrix()
+    except: # works but any exception will trigger this
+        data = msg.payload.decode()
         game_running = False
-        print("Timer hit zero! Game stopped.")
+        targets = []
         clearMatrix()
+        print(data)
+        return
+
     print("Reçu:",msg.payload.decode())
 
 def publication(client, userdata, mid, code, properties):
     print("Envoi confirmé message #" + str(scores))
+
 def clearMatrix():
     with matrix_device as mem:
         mem.write(bytearray([0x00] * 17))
     
     time.sleep(0.5)
+
 # Connexion MQQT
 client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
 client.on_connect = connexion
@@ -107,6 +121,7 @@ with matrix_device as mem:
 try:
     client.connect(BROKER, PORT)
     while True:
+        print(game_running)
         while game_running:
             # 1. Update Player Position
             dot_x = max(0.0, min(7.0, dot_x + calculate_step(x_pin.value)))

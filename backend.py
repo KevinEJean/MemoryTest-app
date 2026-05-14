@@ -111,19 +111,6 @@ def reception_msg(cl,userdata,msg):
         player2_score = message.split(":").pop().replace("}", "")
         player2_data['player2_scores'] = player2_score
         print(player2_score)
-        
-
-    # elif "player1 is ready" in message:
-    #     player1_data['isReady'] = True
-
-    # elif "player2 is ready" in message:
-    #     player2_data['isReady'] = True
-
-    # if player1_data['isReady'] and player2_data['isReady']:
-    #     game_state = 'Game Started'
-
-    # elif "Game Over" in message:
-    #     game_state = "Connected"
 
     else:
         print("Reçu:", message)
@@ -186,7 +173,6 @@ def get_game_state():
     else:
         led_state(1,1,1)
         pi.write(BUZZER,0)
-    # return jsonify({'game_state': game_state, 'player1_score': player1_score, 'player2_score': player2_score, 'timer': game_timer}),200
     return jsonify({'game_state': game_state, 'player1_score': player1_score, 'player2_score': player2_score}),200
 
 @app.route('/api/set_game_state', methods=['POST'])
@@ -201,7 +187,6 @@ def set_game_state():
     if request.method == "POST":
         json = request.get_json()
         if 'game_state' in json and 'difficulty' in json:
-            # if json['game_state'] == 'start' and player1_data['isReady'] == True and player2_data['isReady'] == True:
             if json['game_state'] == 'start':
                 game_state = 'Game Started'
                 clearMatrix()
@@ -219,12 +204,9 @@ def set_game_state():
                     mem.write(bytes([0x21])) 
                     mem.write(bytes([0x81])) 
                     mem.write(bytes([0xEF])) 
-
  
-                    # timer_thread = threading.Thread(target=timer, daemon=True).start()
                     try:
-                        mqtt_client.connect(Broker, PORT)             
-                            # 3. WIN CONDITION
+                        # 3. WIN CONDITION
                         if not targets:
                                 print("Level Cleared! Spawning new wave...")
                                 time.sleep(1)
@@ -268,19 +250,13 @@ def set_game_state():
                         clearMatrix()
                         game_state = "Connected"
 
-            # elif json['game_state'] == 'player1_ready':
-            #     mqtt_client.publish(GAME_TOPIC, "player1 is ready")
-            
-            # elif json['game_state'] == 'player2_ready':
-            #     mqtt_client.publish(GAME_TOPIC, "player2 is ready")
-
             elif json['game_state'] == 'restart' or json['game_state'] == 'end':
-                # timer_thread.join()
                 end_payload = {
                     "type" : "GAME_STATE",
                     "game_state" : "end"
                 }
-                json_player.dumps(end_payload)
+                # json_player.dumps(end_payload) # never actually sends it to the broker (idk why)
+                mqtt_client.publish(GAME_TOPIC, "end") # works but might need some work
                 game_state = 'Connected'
                 clearMatrix()
 
@@ -291,7 +267,6 @@ def set_game_state():
     else:
       return jsonify({'Erreur': 'Requetes POST seulement'}),500
 
-    # print(player1_data['isReady'], player2_data['isReady'])
     return jsonify({'game_state': game_state}),200
 
 

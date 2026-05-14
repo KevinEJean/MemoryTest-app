@@ -112,6 +112,7 @@
             document.getElementById('content-box').style.display = 'block';
             document.getElementById('resetBtn').style.display = 'none';
             document.getElementById('endBtn').style.display = 'none';
+            timer.value = 12
         }
         else if (game_state.value == 'Game Started') {
             document.getElementById('startBtn').style.display = 'none';
@@ -121,8 +122,8 @@
             timer.value -= 1
             console.log(timer.value)
             if (timer.value <= 0) {
-                setGameState("end");
                 timer.value = 12
+                setGameState("end");
             } 
         }
         else {
