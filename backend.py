@@ -19,7 +19,6 @@ matrix = i2c_device.I2CDevice(i2c, 0x70)
 R,G,B = 21,20,16
 BUZZER = 19
 ads = ADS1115(i2c)
-BTN = 19
 
 # Flask
 app = Flask(__name__)
@@ -50,7 +49,6 @@ pi.set_mode(R, pigpio.OUTPUT)
 pi.set_mode(G, pigpio.OUTPUT)
 pi.set_mode(B, pigpio.OUTPUT)
 pi.set_mode(BUZZER, pigpio.OUTPUT)
-pi.set_mode(BTN, pigpio.INPUT)
 x = AnalogIn(ads, 0)
 y = AnalogIn(ads, 1)
 
@@ -128,18 +126,6 @@ def map_display(num_targets):
         "targets2": targets2,
     }
     return json_player.dumps(payload)
-        
-def timer():
-    global game_state
-    global game_timer
-    game_timer = 15
-    for i in range(game_timer):
-        game_timer -= 1
-        mqtt_client.publish(GAME_TOPIC, f"[SERVER] Timer : {game_timer}s")
-        time.sleep(1)
-    game_state = "Connected"
-    clearMatrix()
-    mqtt_client.publish(GAME_TOPIC, f"[SERVER] Timer : Game Over!")
 
 mqtt_client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
 mqtt_client.on_connect = connexion
@@ -163,13 +149,6 @@ def get_game_state():
     # bleue = en_jeux, jaune = restarting, blanc = connected
     if game_state == "Connected":
         led_state(0,0,0)
-    if game_state == "Game Started" and not buzzer_triggered:
-        led_state(1,1,0)
-        pi.write(BUZZER,1)
-        time.sleep(1)
-        pi.write(BUZZER,0)
-
-        buzzer_triggered = True
     else:
         led_state(1,1,1)
         pi.write(BUZZER,0)
@@ -199,6 +178,11 @@ def set_game_state():
 
                 mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
 
+                led_state(1,1,0)
+                pi.write(BUZZER,1)
+                time.sleep(1)
+                pi.write(BUZZER,0)
+
                 # Setup Matrix
                 with matrix as mem:
                     mem.write(bytes([0x21])) 
@@ -211,42 +195,21 @@ def set_game_state():
                                 print("Level Cleared! Spawning new wave...")
                                 time.sleep(1)
                                 rounds += 1
-                                # Re-spawn 10 new dots if you want the game to loop
-                                # targets = [[random.randint(0, 7), random.randint(0, 7)] for _ in range(10)]
                                 mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
 
                                 print(f"Rounds : {rounds}")
                                 if rounds == 3:
                                     print("Fin du programme")
-                                    player1_data["player1_scores"] = scores # pi@rasp11 would be player2_scores ?
+                                    player1_data["player1_scores"] = scores
                                     json_payload = str(player1_data)
                                     mqtt_client.publish(GAME_TOPIC, json_payload)
                                     with matrix as mem:
                                         mem.write(bytearray([0x00] * 17))
-                                    # stop timer
                                     game_state = "Connected"
-                              
-
-                            # # 4. RENDER
-                            # buffer = bytearray([0] * 17)
-                            # buffer[0] = 0x00
-                            
-                            # # Draw remaining targets
-                            # for t in targets:
-                            #     row_idx = (t[1] * 2) + 1
-                            #     buffer[row_idx] |= (1 << t[0])
-                                
-                            # # Draw player
-                            # player_row_idx = (py * 2) + 1
-                            # buffer[player_row_idx] |= (1 << px)
-
-                            # with matrix as mem:
-                            #     mem.write(buffer)
 
                         time.sleep(0.02)
 
                     except KeyboardInterrupt:
-                        # timer_thread.join()
                         clearMatrix()
                         game_state = "Connected"
 
@@ -255,8 +218,7 @@ def set_game_state():
                     "type" : "GAME_STATE",
                     "game_state" : "end"
                 }
-                # json_player.dumps(end_payload) # never actually sends it to the broker (idk why)
-                mqtt_client.publish(GAME_TOPIC, "end") # works but might need some work
+                mqtt_client.publish(GAME_TOPIC, "end")
                 game_state = 'Connected'
                 clearMatrix()
 
@@ -271,4 +233,4 @@ def set_game_state():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000) # host='192.168.17.1'
+    app.run(host='192.168.18.1', port=5000) # host='192.168.18.1'

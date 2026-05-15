@@ -82,17 +82,12 @@ def reception_msg(cl,userdata,msg):
             
                 print(f"Map Loaded: {targets_list}")
 
-        # elif data.get("type") == "GAME_STATE" and data.get("game_state") == "end":
-        #     game_running = False
-        #     targets = []
-        #     print("Timer hit zero! Game stopped.")
-        #     clearMatrix()
-    except: # works but any exception will trigger this
+    except:
         data = msg.payload.decode()
         game_running = False
         targets = []
         clearMatrix()
-        print(data)
+        print("Game ended because :", data)
         return
 
     print("Reçu:",msg.payload.decode())
@@ -121,7 +116,7 @@ with matrix_device as mem:
 try:
     client.connect(BROKER, PORT)
     while True:
-        print(game_running)
+        clearMatrix()
         while game_running:
             # 1. Update Player Position
             dot_x = max(0.0, min(7.0, dot_x + calculate_step(x_pin.value)))
@@ -143,15 +138,20 @@ try:
                dot_x, dot_y = 0.0, 7.0 # Reset player
      
                if rounds == 0:
-                    print("Map 1 Cleared! Loading Map 2...")
-                    targets_list = list(targets_list2)
+                    print("Map 1 Cleared! Loading Map 1...")
+                    targets_list = list(targets_list)
                     rounds = 1
                     dot_x, dot_y = 0.0, 7.0 # Reset player
                     time.sleep(0.5)
-               elif rounds == 2:
-                    print("Map 1 Cleared! Loading Map 2...")
-                    targets_list = list(targets_list3)
+               elif rounds == 1:
+                    print("Map 2 Cleared! Loading Map 2...")
+                    targets_list = list(targets_list2)
                     rounds = 2
+                    dot_x, dot_y = 0.0, 7.0 # Reset player
+                    time.sleep(0.5)
+               elif rounds == 2:
+                    print("Map 3 Cleared! Loading Map 3...")
+                    targets_list = list(targets_list3)
                     dot_x, dot_y = 0.0, 7.0 # Reset player
                     time.sleep(0.5)
      
