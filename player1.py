@@ -161,15 +161,10 @@ try:
                     time.sleep(0.5)
                 else:
                     print("Fin du programme")
-                    clearMatrix()
                     dot_x, dot_y = 0.0, 7.0 # Reset player
                     game_running = False
                     rounds = 0
-                    scores = 0
-
-                # player1_data["player1_scores"] = scores
-                # json_payload = json.dumps(player1_data)
-                # client.publish(GAME_TOPIC, json_payload)         
+                    scores = 0       
 
             # 4. RENDER
             buffer = bytearray([0] * 17)

@@ -174,6 +174,8 @@ def set_game_state():
                 elif json['difficulty'] == 'Hard':
                     NUM_TARGETS = 10
 
+                print(NUM_TARGETS)
+                
                 mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
 
                 led_state(1,1,0)
