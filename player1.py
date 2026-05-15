@@ -47,6 +47,7 @@ global targets_list3
 targets_list = []
 targets_list2 = []
 targets_list3 = []
+gameEnded = False
 
 def calculate_step(raw_value):
     diff = raw_value - CENTER_VAL
@@ -55,7 +56,7 @@ def calculate_step(raw_value):
 
 def connexion(client, userdata, flags, code, properties):
     if code == 0:
-        print("Connecté")
+        print(f"Connecté au Broker ({BROKER})")
         client.subscribe(GAME_TOPIC)
     else:
         print("Erreur code %d\n", code)
@@ -66,6 +67,7 @@ def reception_msg(cl,userdata,msg):
     global targets_list3
     global game_running
     global rounds
+    global gameEnded
     try:
         data = json.loads(msg.payload.decode())
 
@@ -84,16 +86,15 @@ def reception_msg(cl,userdata,msg):
 
     except:
         data = msg.payload.decode()
-        game_running = False
-        targets = []
-        clearMatrix()
-        print("Game ended because :", data)
+        if data == "end":
+            game_running = False
+            gameEnded = True
+            targets = []
+            clearMatrix()
+            print("Game ended because :", data)
         return
 
     print("Reçu:",msg.payload.decode())
-
-def publication(client, userdata, mid, code, properties):
-    print("Envoi confirmé message #" + str(scores))
 
 def clearMatrix():
     with matrix_device as mem:
@@ -116,7 +117,14 @@ with matrix_device as mem:
 try:
     client.connect(BROKER, PORT)
     while True:
-        clearMatrix()
+        if gameEnded:
+            clearMatrix()
+            player1_data["player1_scores"] = scores
+            json_payload = json.dumps(player1_data)
+            client.publish(GAME_TOPIC, json_payload)
+            scores = 0
+            gameEnded = False
+            
         while game_running:
             # 1. Update Player Position
             dot_x = max(0.0, min(7.0, dot_x + calculate_step(x_pin.value)))
@@ -135,36 +143,33 @@ try:
             # 3. WIN CONDITION
             if not targets_list:
 
-               dot_x, dot_y = 0.0, 7.0 # Reset player
+                dot_x, dot_y = 0.0, 7.0 # Reset player
      
-               if rounds == 0:
-                    print("Map 1 Cleared! Loading Map 1...")
+                if rounds == 0:
+                    print("Map 1 Cleared! Loading Map 2...")
                     targets_list = list(targets_list)
                     rounds = 1
-                    dot_x, dot_y = 0.0, 7.0 # Reset player
                     time.sleep(0.5)
-               elif rounds == 1:
-                    print("Map 2 Cleared! Loading Map 2...")
+                elif rounds == 1:
+                    print("Map 2 Cleared! Loading Map 3...")
                     targets_list = list(targets_list2)
                     rounds = 2
-                    dot_x, dot_y = 0.0, 7.0 # Reset player
                     time.sleep(0.5)
-               elif rounds == 2:
-                    print("Map 3 Cleared! Loading Map 3...")
+                elif rounds == 2:
+                    print("Map 3 Cleared!")
                     targets_list = list(targets_list3)
-                    dot_x, dot_y = 0.0, 7.0 # Reset player
                     time.sleep(0.5)
-     
-               else:
+                else:
                     print("Fin du programme")
-                    player1_data["player1_scores"] = scores
-                    json_payload = json.dumps(player1_data)
-                    client.publish(GAME_TOPIC, json_payload)
                     clearMatrix()
                     dot_x, dot_y = 0.0, 7.0 # Reset player
                     game_running = False
                     rounds = 0
-                    scores = 0            
+                    scores = 0
+
+                # player1_data["player1_scores"] = scores
+                # json_payload = json.dumps(player1_data)
+                # client.publish(GAME_TOPIC, json_payload)         
 
             # 4. RENDER
             buffer = bytearray([0] * 17)
@@ -184,5 +189,5 @@ try:
 
             time.sleep(0.02)
 
-except KeyboardInterrupt:
+except:
     clearMatrix()

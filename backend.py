@@ -94,7 +94,6 @@ def calculate_step(raw_value):
 def connexion(client, userdata, flags, code, properties):
     if code == 0:
         mqtt_client.subscribe("map")
-        print("Connecté")
     else:
         print("Erreur code %d\n", code)
 
@@ -108,7 +107,6 @@ def reception_msg(cl,userdata,msg):
     elif "player2_score" in message:
         player2_score = message.split(":").pop().replace("}", "")
         player2_data['player2_scores'] = player2_score
-        print(player2_score)
 
     else:
         print("Reçu:", message)
@@ -146,7 +144,7 @@ def get_game_state():
     mqtt_client.on_message = reception_msg
     player1_score = player1_data['player1_scores']
     player2_score = player2_data['player2_scores']
-    # bleue = en_jeux, jaune = restarting, blanc = connected
+    # bleue = en_jeux, blanc = connected
     if game_state == "Connected":
         led_state(0,0,0)
     else:
@@ -209,7 +207,7 @@ def set_game_state():
 
                         time.sleep(0.02)
 
-                    except KeyboardInterrupt:
+                    except:
                         clearMatrix()
                         game_state = "Connected"
 

@@ -59,7 +59,7 @@
 
     <div class='root'>
         <div class='container'>
-            <h1 class='title'>MEMORY TEST</h1>
+            <h1 class='title'>Dot.Eat</h1>
             <h2>Player 1 Score: <input id='player1_score' value='' readonly /></h2>
             <h2>Player 2 Score : <input id='player2_score' value='' readonly /></h2>
             <h2>Game State : <input id='game-state' value='Not Connected' readonly /></h2>
@@ -74,7 +74,6 @@
 
             <div class='buttons'>
                 <button id='startBtn' onclick='setGameState("start")'>Start the game</button>
-                <button id='resetBtn' onclick='setGameState("restart")'>Restart / Debug</button>
                 <button id='endBtn' onclick='setGameState("end")'>End the game</button>
             </div>
         </div>
@@ -108,14 +107,12 @@
         if (game_state.value == 'Connected') {
             document.getElementById('startBtn').style.display = 'block';
             document.getElementById('content-box').style.display = 'block';
-            document.getElementById('resetBtn').style.display = 'none';
             document.getElementById('endBtn').style.display = 'none';
             timer.value = 12
         }
         else if (game_state.value == 'Game Started') {
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('content-box').style.display = 'none';
-            document.getElementById('resetBtn').style.display = 'block';
             document.getElementById('endBtn').style.display = 'block';
             timer.value -= 1
             console.log(timer.value)
@@ -127,7 +124,6 @@
         else {
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('content-box').style.display = 'none';
-            document.getElementById('resetBtn').style.display = 'none';
             document.getElementById('endBtn').style.display = 'none';
         }
     }, 1000);
