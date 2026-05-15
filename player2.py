@@ -22,6 +22,7 @@ GAME_TOPIC = "map"
 global targets
 targets = 0
 game_running = False
+
 # Data a envoyer par MQQT
 player2_data = {
     "player2_scores" : None
@@ -46,6 +47,7 @@ global targets_list3
 targets_list = []
 targets_list2 = []
 targets_list3 = []
+gameEnded = False
 
 def calculate_step(raw_value):
     diff = raw_value - CENTER_VAL
@@ -54,7 +56,7 @@ def calculate_step(raw_value):
 
 def connexion(client, userdata, flags, code, properties):
     if code == 0:
-        print("Connecté")
+        print(f"Connecté au Broker ({BROKER})")
         client.subscribe(GAME_TOPIC)
     else:
         print("Erreur code %d\n", code)
@@ -65,33 +67,41 @@ def reception_msg(cl,userdata,msg):
     global targets_list3
     global game_running
     global rounds
-    data = json.loads(msg.payload.decode())
-    
-    # Check if the message contains the map
-    if data.get("type") == "MAP_DATA":
-            game_running = True
-            rounds = 0
-            targets_list = data.get("targets", [])
-        
-            targets_list2 = data.get("targets1", [])
-      
-            targets_list3 = data.get("targets2",[])
+    global gameEnded
+    try:
+        data = json.loads(msg.payload.decode())
+
+        # Check if the message contains the map
+        if data.get("type") == "MAP_DATA":
+                game_running = True
+                rounds = 0
+                targets_list = data.get("targets", [])
             
-      
-            print(f"Map Loaded: {targets_list}")
-    elif data.get("type") == "GAME_STATE" and data.get("game_state") == "end":
-        game_running = False
-        print("Timer hit zero! Game stopped.")
-        clearMatrix()
+                targets_list2 = data.get("targets1", [])
+            
+                targets_list3 = data.get("targets2",[])
+                
+            
+                print(f"Map Loaded: {targets_list}")
+
+    except:
+        data = msg.payload.decode()
+        if data == "end":
+            game_running = False
+            gameEnded = True
+            targets = []
+            clearMatrix()
+            print("Game ended because :", data)
+        return
+
     print("Reçu:",msg.payload.decode())
 
-def publication(client, userdata, mid, code, properties):
-    print("Envoi confirmé message #" + str(scores))
 def clearMatrix():
     with matrix_device as mem:
         mem.write(bytearray([0x00] * 17))
     
     time.sleep(0.5)
+
 # Connexion MQQT
 client = pmc.Client(pmc.CallbackAPIVersion.VERSION2)
 client.on_connect = connexion
@@ -107,6 +117,14 @@ with matrix_device as mem:
 try:
     client.connect(BROKER, PORT)
     while True:
+        if gameEnded:
+            clearMatrix()
+            player2_data["player2_scores"] = scores
+            json_payload = json.dumps(player2_data)
+            client.publish(GAME_TOPIC, json_payload)
+            scores = 0
+            gameEnded = False
+            
         while game_running:
             # 1. Update Player Position
             dot_x = max(0.0, min(7.0, dot_x + calculate_step(x_pin.value)))
@@ -125,31 +143,28 @@ try:
             # 3. WIN CONDITION
             if not targets_list:
 
-               dot_x, dot_y = 0.0, 7.0 # Reset player
+                dot_x, dot_y = 0.0, 7.0 # Reset player
      
-               if rounds == 0:
+                if rounds == 0:
                     print("Map 1 Cleared! Loading Map 2...")
-                    targets_list = list(targets_list2)
+                    targets_list = list(targets_list)
                     rounds = 1
-                    dot_x, dot_y = 0.0, 7.0 # Reset player
                     time.sleep(0.5)
-               elif rounds == 2:
-                    print("Map 1 Cleared! Loading Map 2...")
-                    targets_list = list(targets_list3)
+                elif rounds == 1:
+                    print("Map 2 Cleared! Loading Map 3...")
+                    targets_list = list(targets_list2)
                     rounds = 2
-                    dot_x, dot_y = 0.0, 7.0 # Reset player
                     time.sleep(0.5)
-     
-               else:
+                elif rounds == 2:
+                    print("Map 3 Cleared!")
+                    targets_list = list(targets_list3)
+                    time.sleep(0.5)
+                else:
                     print("Fin du programme")
-                    player2_data["player2_scores"] = scores
-                    json_payload = json.dumps(player2_data)
-                    client.publish(GAME_TOPIC, json_payload)
-                    clearMatrix()
                     dot_x, dot_y = 0.0, 7.0 # Reset player
                     game_running = False
                     rounds = 0
-                    scores = 0            
+                    scores = 0       
 
             # 4. RENDER
             buffer = bytearray([0] * 17)
@@ -169,5 +184,5 @@ try:
 
             time.sleep(0.02)
 
-except KeyboardInterrupt:
+except:
     clearMatrix()
