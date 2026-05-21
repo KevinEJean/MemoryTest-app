@@ -183,35 +183,35 @@ def set_game_state():
                 time.sleep(1)
                 pi.write(BUZZER,0)
 
-                # Setup Matrix
-                with matrix as mem:
-                    mem.write(bytes([0x21])) 
-                    mem.write(bytes([0x81])) 
-                    mem.write(bytes([0xEF])) 
+                # # Setup Matrix
+                # with matrix as mem:
+                #     mem.write(bytes([0x21])) 
+                #     mem.write(bytes([0x81])) 
+                #     mem.write(bytes([0xEF])) 
  
-                    try:
-                        # 3. WIN CONDITION
-                        if not targets:
-                                print("Level Cleared! Spawning new wave...")
-                                time.sleep(1)
-                                rounds += 1
-                                mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
+                #     try:
+                #         # 3. WIN CONDITION
+                #         if not targets:
+                #                 print("Level Cleared! Spawning new wave...")
+                #                 time.sleep(1)
+                #                 rounds += 1
+                #                 mqtt_client.publish(GAME_TOPIC, map_display(NUM_TARGETS))
 
-                                print(f"Rounds : {rounds}")
-                                if rounds == 3:
-                                    print("Fin du programme")
-                                    player1_data["player1_scores"] = scores
-                                    json_payload = str(player1_data)
-                                    mqtt_client.publish(GAME_TOPIC, json_payload)
-                                    with matrix as mem:
-                                        mem.write(bytearray([0x00] * 17))
-                                    game_state = "Connected"
+                #                 print(f"Rounds : {rounds}")
+                #                 if rounds == 3:
+                #                     print("Fin du programme")
+                #                     player1_data["player1_scores"] = scores
+                #                     json_payload = str(player1_data)
+                #                     mqtt_client.publish(GAME_TOPIC, json_payload)
+                #                     with matrix as mem:
+                #                         mem.write(bytearray([0x00] * 17))
+                #                     game_state = "Connected"
 
-                        time.sleep(0.02)
+                #         time.sleep(0.02)
 
-                    except:
-                        clearMatrix()
-                        game_state = "Connected"
+                #     except:
+                #         clearMatrix()
+                #         game_state = "Connected"
 
             elif json['game_state'] == 'restart' or json['game_state'] == 'end':
                 end_payload = {
